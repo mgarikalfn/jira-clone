@@ -11,6 +11,7 @@ import { DottedSeparator } from "@/components/ui/dotted-separator";
 import { Input } from "@/components/ui/input";
 
 import { Form, FormControl, FormField, FormItem, FormMessage } from "@/components/ui/form";
+import Link from "next/link";
 
 const formSchema = z.object({
   email: z.email().trim().min(8 , "atleast 8 characters"),
@@ -101,6 +102,17 @@ export const SignInCard = () => {
           <FaGithub className="mr-2 size-5" />
           Login with GitHub
         </Button>
+      </CardContent>
+      <div className="px-7">
+              <DottedSeparator/>
+      </div>
+      <CardContent className="p-7 flex items-center justify-center">
+        <p>
+            Don&apos;t have an account?
+            <Link href="/sign-up">
+            <span className="text-blue-700">&nbsp;Sign Up</span>
+            </Link>
+        </p>
       </CardContent>
     </Card>
   );

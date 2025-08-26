@@ -1,12 +1,45 @@
-import Link from "next/link"
-import{ FcGoogle } from "react-icons/fc"
-import {FaGithub} from 'react-icons/fa'
+import { z } from "zod";
+
+import Link from "next/link";
+import { FcGoogle } from "react-icons/fc";
+
+import { FaGithub } from "react-icons/fa";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+
 import { DottedSeparator } from "@/components/ui/dotted-separator";
 import { Input } from "@/components/ui/input";
+import { Form, FormControl, FormField, FormItem, FormMessage } from "@/components/ui/form";
+
+const formSchema = z.object({
+  email: z.email().trim().min(8, "atleast 8 chararcter"),
+  name: z.string().trim().min(5,"minimum of 5 characters"),
+  password: z.string().min(8, "atleast 8 characters"),
+});
+
+const onSubmit = (value: z.infer<typeof formSchema>) => {
+  console.log(value);
+};
 
 export const SignUpCard = () => {
+  const form = useForm({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      email: "",
+      password: "",
+      name: "",
+    },
+  });
+
   return (
     <Card className="w-full h-full md:w-[487px] border-none shadow-none">
       <CardHeader className="flex flex-col items-center justify-center text-center p-7">
@@ -14,60 +47,110 @@ export const SignUpCard = () => {
         <CardDescription>
           By signing up , you agree to our {""}
           <Link href="/privacy">
-           <span className="text-blue-700">Privacy Policy</span>
-          </Link>{""}
+            <span className="text-blue-700">Privacy Policy</span>
+          </Link>
+          {""}
           <Link href="/terms">
-          <span className="text-blue-700">Terms of service</span>
+            <span className="text-blue-700">Terms of service</span>
           </Link>
         </CardDescription>
-        
       </CardHeader>
-       <div className="px-7">
+      <div className="px-7">
         <DottedSeparator />
-      </div> 
+      </div>
       <CardContent className="p-7">
-        <form action="" className="space-y-4">
-           <Input
-            required
-            type="text"
-            value={""}
-            onChange={() => {}}
-            placeholder="Enter username"
-            disabled={false}
-          />
-          <Input
-            required
-            type="email"
-            value={""}
-            onChange={() => {}}
-            placeholder="Enter email address"
-            disabled={false}
-          />
-          <Input
-            required
-            type="password"
-            value={""}
-            onChange={() => {}}
-            placeholder="Enter password"
-            disabled={false}
-            min={8}
-            max={256}
-          />
-          <Button disabled={false} size="lg" className="w-full">
-            Login
-          </Button>
-        </form>
+       <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <FormField
+              name="email"
+              control={form.control}
+              render={({ field }) => (
+                <FormItem>
+                    <FormControl>
+                  <Input
+                    {...field}
+                    placeholder="Enter email address"
+                    disabled={false}
+                  />
+                  </FormControl>
+                  <FormMessage/>
+                </FormItem>
+              )}
+            />
+            <FormField
+              name="password"
+              control={form.control}
+              render={({ field }) => (
+                <FormItem>
+                  <Input
+                    type="password"
+                    required
+                    {...field}
+                    placeholder="Enter password"
+                    disabled={false}
+                    min={8}
+                    max={256}
+                  />
+                  <FormMessage/>
+                </FormItem>
+              )}
+            />
+            <FormField
+            name="name"
+            control={form.control}
+            render={({field})=>(
+              <FormItem>
+                  <Input
+                    type="text"
+                    required
+                    {...field}
+                    placeholder="Enter username"
+                    disabled={false}
+                    min={8}
+                    max={256}
+                  />
+                  <FormMessage/>
+                </FormItem>
+            )}
+            />
+             <Button disabled={false} size="lg" className="w-full">Sign Up</Button>
+          </form>
+        </Form>
       </CardContent>
       <div className="px-7">
-        <DottedSeparator/>
+        <DottedSeparator />
       </div>
       <CardContent className="p-7 flex flex-col gap-y-4">
-        <Button disabled={false} variant="secondary" size="lg" className="w-full">
-            <FcGoogle className="mr-2 size-5"/>
-            Login with Google</Button>
-         <Button disabled={false} variant="secondary" size="lg" className="w-full">
-            <FaGithub className="mr-2 size-5"/>
-            Login with GitHub</Button>
+        <Button
+          disabled={false}
+          variant="secondary"
+          size="lg"
+          className="w-full"
+        >
+          <FcGoogle className="mr-2 size-5" />
+          Login with Google
+        </Button>
+        <Button
+          disabled={false}
+          variant="secondary"
+          size="lg"
+          className="w-full"
+        >
+          <FaGithub className="mr-2 size-5" />
+          Login with GitHub
+        </Button>
+      </CardContent>
+
+       <div className="px-7">
+              <DottedSeparator/>
+      </div>
+      <CardContent className="p-7 flex items-center justify-center">
+        <p>
+            Already  have an account?
+            <Link href="/sign-in">
+            <span className="text-blue-700">&nbsp;Sign in</span>
+            </Link>
+        </p>
       </CardContent>
     </Card>
   );
