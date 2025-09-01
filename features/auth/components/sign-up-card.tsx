@@ -19,20 +19,17 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { DottedSeparator } from "@/components/ui/dotted-separator";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormMessage } from "@/components/ui/form";
+import { registerSchema } from "../schemas";
+import { useRegister } from "../api/use-register";
 
-const formSchema = z.object({
-  email: z.email().trim().min(8, "atleast 8 chararcter"),
-  name: z.string().trim().min(5,"minimum of 5 characters"),
-  password: z.string().min(8, "atleast 8 characters"),
-});
 
-const onSubmit = (value: z.infer<typeof formSchema>) => {
-  console.log(value);
-};
+
+
 
 export const SignUpCard = () => {
+  const {mutate} = useRegister();
   const form = useForm({
-    resolver: zodResolver(formSchema),
+    resolver: zodResolver(registerSchema),
     defaultValues: {
       email: "",
       password: "",
@@ -40,6 +37,9 @@ export const SignUpCard = () => {
     },
   });
 
+  const onSubmit = (value: z.infer<typeof registerSchema>) => {
+  mutate({json : value })
+};
   return (
     <Card className="w-full h-full md:w-[487px] border-none shadow-none">
       <CardHeader className="flex flex-col items-center justify-center text-center p-7">
