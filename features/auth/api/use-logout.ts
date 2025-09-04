@@ -10,7 +10,7 @@ type ResponseType = InferResponseType<typeof client.api.auth.logout["$post"]>
 
 export const useLogout = () =>{
     const queryClient = useQueryClient();
-
+    const router = useRouter();
 
     const mutation = useMutation<
     ResponseType,
@@ -27,7 +27,9 @@ export const useLogout = () =>{
         },
         onSuccess:() => {
             toast.success("Logged out");
-            window.location.reload();
+            router.refresh();
+            queryClient.invalidateQueries({queryKey:["current"]});
+            queryClient.invalidateQueries({queryKey:["workspaces"]})
             
         },
         onError:() => {
