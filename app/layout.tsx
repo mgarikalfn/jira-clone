@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import {Inter} from "next/font/google";
 import {Toaster} from "@/components/ui/sonner";
 import "./globals.css";
+import { NuqsAdapter } from 'nuqs/adapters/next/app';
 
 import {cn} from "@/lib/utils"
 import {QueryProvider} from '@/components/query-provider'
@@ -26,7 +27,7 @@ export default function RootLayout({
       >
         <QueryProvider>
           <Toaster/>
-        {children}
+        <NuqsAdapter>{children}</NuqsAdapter>
         </QueryProvider>
       </body>
     </html>

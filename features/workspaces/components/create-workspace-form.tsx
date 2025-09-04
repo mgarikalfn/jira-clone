@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { useCreateWorkspace } from "../api/use-create-workspace";
 import { Divide, ImageIcon } from "lucide-react";
 import { AvatarFallback } from "@radix-ui/react-avatar";
+import { useRouter } from "next/navigation";
 
 interface CreateWorkspaceFormProps{
     onCancel?:() => void;
@@ -23,7 +24,7 @@ interface CreateWorkspaceFormProps{
 
 export const CreateWorkspaceForm = ({onCancel}:CreateWorkspaceFormProps)=>{
     const {mutate,isPending} = useCreateWorkspace();
-
+    const router = useRouter();
     const inputRef = useRef<HTMLInputElement>(null);
 
     const form = useForm<z.infer<typeof createWorkspaceSchema>>({
@@ -40,8 +41,9 @@ export const CreateWorkspaceForm = ({onCancel}:CreateWorkspaceFormProps)=>{
             image:values.image instanceof File? values.image : "",
         }
         mutate({form:finalValues} , {
-            onSuccess: () => {
+            onSuccess: ({data}) => {
                 form.reset();
+                router.push(`/workspaces/${data.$id}`);
                 //Todo : redirect to new workspace
             }
         });
