@@ -60,4 +60,8 @@ function Button({
   )
 }
 
-export { Button, buttonVariants }
+// button.tsx
+
+export type ButtonProps = React.ComponentProps<typeof Button>;
+export { Button, buttonVariants };
+
