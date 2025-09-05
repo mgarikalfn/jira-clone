@@ -17,7 +17,7 @@ import { useCreateWorkspace } from "../api/use-create-workspace";
 import { Divide, ImageIcon } from "lucide-react";
 import { AvatarFallback } from "@radix-ui/react-avatar";
 import { useRouter } from "next/navigation";
-
+import { cn } from "@/lib/utils";
 interface CreateWorkspaceFormProps{
     onCancel?:() => void;
 }
@@ -120,7 +120,26 @@ export const CreateWorkspaceForm = ({onCancel}:CreateWorkspaceFormProps)=>{
                                         disabled ={isPending}
                                         onChange={handleImageChange}
                                         />
-                                        <Button
+                                       {field.value ? (
+                                         <Button
+                                         type="button"
+                                         disabled={isPending}
+                                         variant="destructive"
+                                         size="xs"
+                                         className="w-fit mt-2"
+                                        
+                                          onClick={ () => {
+                                            field.onChange(null);
+                                            if(inputRef.current){
+                                                inputRef.current.value = "";
+                                            }
+                                         }}
+                                        >
+                                            
+                                            Remove Image
+                                        </Button>
+                                       ) : (
+                                         <Button
                                          type="button"
                                          disabled={isPending}
                                          variant="teritary"
@@ -128,8 +147,9 @@ export const CreateWorkspaceForm = ({onCancel}:CreateWorkspaceFormProps)=>{
                                          className="w-fit mt-2"
                                          onClick={() => inputRef.current?.click()}
                                         >
-                                            Upload Image
+                                            upload Image
                                         </Button>
+                                       )}
                                     </div>
                                 </div>
                             </div>
@@ -144,7 +164,9 @@ export const CreateWorkspaceForm = ({onCancel}:CreateWorkspaceFormProps)=>{
                             size="lg"
                             variant="secondary"
                             onClick={onCancel}
-                            disabled={isPending}>
+                            disabled={isPending}
+                            className={cn(!onCancel && "invisible")}
+                            >
                                 Cancel
                             </Button>
                              <Button 
