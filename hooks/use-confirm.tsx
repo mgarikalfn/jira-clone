@@ -25,7 +25,7 @@ export const useConfirm = (
     };
 
     const handleConfirm = () => {
-        promise?.resolve(false);
+        promise?.resolve(true);
         handleClose();
     };
 
