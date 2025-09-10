@@ -33,15 +33,16 @@ export const CreateProjectForm = ({onCancel}:CreateProjectFormProps)=>{
     const router = useRouter();
     const inputRef = useRef<HTMLInputElement>(null);
 
-    const form = useForm<z.infer<typeof createProjectSchema>>({
-        resolver:zodResolver(createProjectSchema),
-        defaultValues:{
-            name:"",
+  const formSchema = createProjectSchema.omit({ workspaceId: true });
 
-        },
-    });
+const form = useForm<z.infer<typeof formSchema>>({
+  resolver: zodResolver(formSchema),
+  defaultValues: { name: "" },
+});
 
-    const onSubmit = (values:z.infer<typeof createProjectSchema>) => {
+
+
+    const onSubmit = (values:z.infer<typeof formSchema>) => {
         const finalValues = {
             ...values,
             workspaceId,
@@ -50,7 +51,7 @@ export const CreateProjectForm = ({onCancel}:CreateProjectFormProps)=>{
         mutate({form:finalValues} , {
             onSuccess: ({data}) => {
                 form.reset();
-                
+                router.push(`/workspaces/${workspaceId}/projects/${data.$id}`)
                 //Todo : redirect to new workspace
             }
         });
