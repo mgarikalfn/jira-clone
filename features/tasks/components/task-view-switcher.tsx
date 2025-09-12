@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button"
 import { DottedSeparator } from "@/components/ui/dotted-separator"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { TabsContent } from "@radix-ui/react-tabs"
 import { PlusIcon } from "lucide-react"
 
 export const TaskViewSwitcher = () => {
@@ -33,7 +34,20 @@ export const TaskViewSwitcher = () => {
                     </Button>
                 </div>
                 <DottedSeparator />
-                
+                {/* Add filters */}
+                <DottedSeparator />
+                <>
+                <TabsContent value="table" className="mt-0">
+                    Data table
+                </TabsContent>
+                <TabsContent value="kanban" className="mt-0">
+                    Data kanban
+                </TabsContent>
+                <TabsContent value="calendar" className="mt-0">
+                    Data calender
+                </TabsContent>
+
+                </>
             </div>
             
         </Tabs>
