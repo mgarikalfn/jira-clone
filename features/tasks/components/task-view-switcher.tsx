@@ -1,10 +1,14 @@
+"use client";
+
 import { Button } from "@/components/ui/button"
 import { DottedSeparator } from "@/components/ui/dotted-separator"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { TabsContent } from "@radix-ui/react-tabs"
 import { PlusIcon } from "lucide-react"
+import { useCreateTaskModal } from "../hooks/use-create-task-modal"
 
 export const TaskViewSwitcher = () => {
+    const {open, setIsOpen} = useCreateTaskModal();  
     return (
         <Tabs
          className="flex-1 w-full border rounded-lg"
@@ -26,6 +30,7 @@ export const TaskViewSwitcher = () => {
                         </TabsTrigger>
                     </TabsList>
                     <Button
+                        onClick={open}
                         size="sm"
                         className="w-full lg:w-auto"
                     >
