@@ -55,7 +55,7 @@ const form = useForm<z.infer<typeof formSchema>>({
         mutate({json:{...values,workspaceId}} , {
             onSuccess: ({data}) => {
                 form.reset();
-               
+                onCancel?.();
                 //Todo : redirect to new task
             }
         });

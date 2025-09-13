@@ -51,7 +51,7 @@ const app = new Hono()
 
         const query = [ 
         Query.equal("workspaceId" ,workspaceId),
-        Query.orderDesc("$createAt")
+         Query.orderDesc("$createdAt"),
         ];
 
         if(projectId) {

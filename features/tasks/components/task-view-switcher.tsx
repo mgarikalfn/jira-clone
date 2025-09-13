@@ -1,60 +1,88 @@
 "use client";
 
-import { Button } from "@/components/ui/button"
-import { DottedSeparator } from "@/components/ui/dotted-separator"
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { TabsContent } from "@radix-ui/react-tabs"
-import { PlusIcon } from "lucide-react"
-import { useCreateTaskModal } from "../hooks/use-create-task-modal"
+import { Loader, PlusIcon } from "lucide-react";
+import { useQueryState } from "nuqs";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+
+import { Button } from "@/components/ui/button";
+import { useCreateTaskModal } from "../hooks/use-create-task-modal";
+import { useGetTasks } from "../api/use-get-tasks";
+import { useWorkspaceId } from "@/features/workspaces/hooks/use-workspace-id";
+import { DottedSeparator } from "@/components/ui/dotted-separator";
+import { DataFilters } from "./data-filters";
+import { useTaskFilters } from "../hooks/use-task-filters";
 
 export const TaskViewSwitcher = () => {
-    const {open, setIsOpen} = useCreateTaskModal();  
-    return (
-        <Tabs
-         className="flex-1 w-full border rounded-lg"
-         >
-            <div className="h-full flex flex-col overflow-auto p-4">
-                <div className="flex flex-col gap-y-2 lg:flex-row justify-between items-center">
-                    <TabsList className="w-full lg:w-auto">
-                        <TabsTrigger className="h-8 w-full 
-                        lg:w-auto"  value="table">
-                            Table
-                        </TabsTrigger>
-                        <TabsTrigger className="h-8 w-full 
-                        lg:w-auto"  value="kanban">
-                            Kanban
-                        </TabsTrigger>
-                        <TabsTrigger className="h-8 w-full 
-                        lg:w-auto"  value="calendar">
-                            Calendar
-                        </TabsTrigger>
-                    </TabsList>
-                    <Button
-                        onClick={open}
-                        size="sm"
-                        className="w-full lg:w-auto"
-                    >
-                        <PlusIcon className="size-4 mr-2"/>
-                        New
-                    </Button>
-                </div>
-                <DottedSeparator />
-                {/* Add filters */}
-                <DottedSeparator />
-                <>
-                <TabsContent value="table" className="mt-0">
-                    Data table
-                </TabsContent>
-                <TabsContent value="kanban" className="mt-0">
-                    Data kanban
-                </TabsContent>
-                <TabsContent value="calendar" className="mt-0">
-                    Data calender
-                </TabsContent>
+  const [{ status, assigneeId, projectId, dueDate }, setFilters] =
+    useTaskFilters();
+  const [view, setView] = useQueryState("task-view", {
+    defaultValue: "table",
+  });
 
-                </>
-            </div>
-            
-        </Tabs>
-    )
-}
+  const workspaceId = useWorkspaceId();
+  const { open, setIsOpen } = useCreateTaskModal();
+
+  const { data: tasks, isLoading: isLoadingTasks } = useGetTasks({
+    workspaceId,projectId,assigneeId,status,dueDate
+  });
+
+  return (
+    <Tabs
+      defaultValue={view}
+      onValueChange={setView}
+      className="flex-1 w-full border rounded-lg"
+    >
+      <div className="h-full flex flex-col overflow-auto p-4">
+        <div className="flex flex-col gap-y-2 lg:flex-row justify-between items-center">
+          <TabsList className="w-full lg:w-auto">
+            <TabsTrigger
+              className="h-8 w-full 
+                        lg:w-auto"
+              value="table"
+            >
+              Table
+            </TabsTrigger>
+            <TabsTrigger
+              className="h-8 w-full 
+                        lg:w-auto"
+              value="kanban"
+            >
+              Kanban
+            </TabsTrigger>
+            <TabsTrigger
+              className="h-8 w-full 
+                        lg:w-auto"
+              value="calendar"
+            >
+              Calendar
+            </TabsTrigger>
+          </TabsList>
+          <Button onClick={open} size="sm" className="w-full lg:w-auto">
+            <PlusIcon className="size-4 mr-2" />
+            New
+          </Button>
+        </div>
+        <DottedSeparator />
+        <DataFilters />
+        <DottedSeparator />
+        {isLoadingTasks ? (
+          <div className="w-full border rounded-lg h-[200px] flex flex-col items-center justify-center">
+            <Loader className="size-5 animate-spin text-muted-foreground" />
+          </div>
+        ) : (
+          <>
+            <TabsContent value="table" className="mt-0">
+              {JSON.stringify(tasks)}
+            </TabsContent>
+            <TabsContent value="kanban" className="mt-0">
+              {JSON.stringify(tasks)}
+            </TabsContent>
+            <TabsContent value="calendar" className="mt-0">
+              {JSON.stringify(tasks)}
+            </TabsContent>
+          </>
+        )}
+      </div>
+    </Tabs>
+  );
+};
