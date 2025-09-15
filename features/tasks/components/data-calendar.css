@@ -1,0 +1,12 @@
+.rbc-header{
+    @apply text-sm;
+    @apply font-normal;
+    @apply pb-4;
+    @apply text-muted-foreground;
+    @apply border-b-0;
+}
+
+
+.rbc-month-row{
+    @apply min-h-[180px];
+}

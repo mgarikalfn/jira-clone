@@ -1,3 +1,5 @@
+@config "../tailwind.config.js";
+
 @import "tailwindcss";
 @import "tw-animate-css";
 
@@ -129,3 +131,41 @@
   display: none; /* Chrome, Safari, Opera */
 }
 
+
+.rbc-header{
+    @apply text-sm;
+    @apply font-normal;
+    @apply pb-4;
+    @apply text-muted-foreground;
+    @apply border-b-0;
+}
+
+
+.rbc-month-row{
+    @apply min-h-[180px];
+}
+
+.rbc-header + .rbc-header {
+  @apply border-l-0;
+}
+
+.rbc-button-link{
+  @apply text-xs;
+  @apply font-normal;
+  @apply text-muted-foreground;
+}
+
+.rbc-month-row{
+  @apply min-h-[180px];
+  @apply border-t;
+  @apply border-x;
+}
+
+.rbc-month-row:last-of-type{
+  @apply border-b;
+  @apply rounded-b-md;
+}
+
+.rbc-month-view{
+  @apply border-none;
+}
