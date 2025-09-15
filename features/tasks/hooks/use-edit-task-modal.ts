@@ -2,14 +2,14 @@ import {useQueryState,parseAsBoolean, parseAsString} from "nuqs";
 
 export const useEditTaskModal = () => {
     const [taskId , setTaskId] = useQueryState(
-        "create-task",
-        parseAsString,
+        "edit-task",
+        parseAsString.withDefault("").withOptions({ clearOnDefault: true })
     );
 
 
 
     const open = (id:string) => setTaskId(id);
-    const close = () => setTaskId(null);
+    const close = () => setTaskId("");
 
 
     return {
