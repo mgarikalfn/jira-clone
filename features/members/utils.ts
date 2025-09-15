@@ -3,8 +3,8 @@ import {Query , type Databases} from "node-appwrite";
 import { DATABASE_ID , MEMBERS_ID } from "@/config";
 
 interface GetMemberProps {
-    databases:Databases,
-    workspaceId:string,
+    databases:Databases;
+    workspaceId:string ;
     userId:string
 }
 
