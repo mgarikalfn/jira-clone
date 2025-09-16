@@ -94,7 +94,6 @@ export const EditWorkspaceForm = ({
       },
       {
         onSuccess: () => {
-          router.refresh();
         },
       }
     );
@@ -110,13 +109,7 @@ export const EditWorkspaceForm = ({
         form: finalValues,
         param: { workspaceId: initialValues.$id },
       },
-      {
-        onSuccess: () => {
-          form.reset();
-         
-          //Todo : redirect to new workspace
-        },
-      }
+     
     );
   };
 

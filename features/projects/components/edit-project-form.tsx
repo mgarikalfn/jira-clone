@@ -87,13 +87,7 @@ export const EditProjectForm = ({
         form: finalValues,
         param: { projectId: initialValues.$id },
       },
-      {
-        onSuccess: () => {
-          form.reset();
-         
-          //Todo : redirect to new workspace
-        },
-      }
+    
     );
   };
 
@@ -116,7 +110,7 @@ export const EditProjectForm = ({
             onClick={
               onCancel
                 ? onCancel
-                : () => router.push(`/workspaces/${initialValues.$workspaceId}/projects/${initialValues.$id}`)
+                : () => router.push(`/workspaces/${initialValues.workspaceId}/projects/${initialValues.$id}`)
             }
           >
             <ArrowLeftIcon className="size-4 mr-2" />
