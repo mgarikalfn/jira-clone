@@ -1,4 +1,4 @@
-import {redirect, RedirectType} from "next/navigation";
+import {redirect} from "next/navigation";
 
 import { getCurrent } from "@/features/auth/server/queries";
 import { MembersList } from "@/features/workspaces/components/members-list";

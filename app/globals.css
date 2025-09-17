@@ -1,4 +1,4 @@
-@config "../tailwind.config.js";
+
 
 @import "tailwindcss";
 @import "tw-animate-css";
@@ -133,7 +133,7 @@
 
 
 .rbc-header{
-    @apply text-sm;
+   
     @apply font-normal;
     @apply pb-4;
     @apply text-muted-foreground;
