@@ -9,84 +9,92 @@ import { useGetComments } from "@/features/comments/api/use-get-comments";
 import { keyof } from "zod";
 import { Card, CardContent } from "@/components/ui/card";
 import { formatDistanceToNow } from "date-fns";
+import { PageLoader } from "@/components/page-loader";
+import { AppComment } from "@/features/comments/types";
 
 interface TaskCommentProps {
-  task: Task;
+    task: Task;
 }
 
 export const TaskComment = ({ task }: TaskCommentProps) => {
-  const [isEditing, setIsEditing] = useState(false);
-  const taskId = task.$id
-  const {data:comments , isPending} = useGetComments({taskId});
-  return (
-    <div>
-      <div className="p-4 boarder rounded-lg">
-        <div className="flex items-center justify-between">
-          <p className="text-lg font-semibold">Comments</p>
-          <Button
-            onClick={() => setIsEditing((prev) => !prev)}
-            size="sm"
-            variant="secondary"
-          >
-            {isEditing ? (
-              <XIcon className="size-4 mr-2" />
-            ) : (
-              <PencilIcon className="size-4 mr-2" />
-            )}
-            {isEditing ? "Cancel" : "comment"}
-          </Button>
-        </div>
-        <DottedSeparator className="my-4" />
-        {isEditing ? (
-          <div className="flex items-center gap-4">
-            <MemberAvatar name={task.name} className="size-8" />
-            <div className="flex flex-col gap-y-4 flex-1">
-              <Textarea
-                placeholder="Add a comment ..."
-                rows={4}
-                className="w-[400px] resize-none break-words"
-              />
+    const [isEditing, setIsEditing] = useState(false);
+    const taskId = task.$id
+    
+    const { data: comments =[], isPending } = useGetComments({ taskId });
 
-              <Button size="sm" className="w-fit ml-auto">
-                Post
-              </Button>
+
+    
+    return (
+        <div>
+            <div className="p-4 boarder rounded-lg">
+                <div className="flex items-center justify-between">
+                    <p className="text-lg font-semibold">Comments</p>
+                    <Button
+                        onClick={() => setIsEditing((prev) => !prev)}
+                        size="sm"
+                        variant="secondary"
+                    >
+                        {isEditing ? (
+                            <XIcon className="size-4 mr-2" />
+                        ) : (
+                            <PencilIcon className="size-4 mr-2" />
+                        )}
+                        {isEditing ? "Cancel" : "comment"}
+                    </Button>
+                </div>
+                <DottedSeparator className="my-4" />
+                {isEditing ? (
+                    <div className="flex items-center gap-4">
+                        <MemberAvatar name={task.name} className="size-8" />
+                        <div className="flex flex-col gap-y-4 flex-1">
+                            <Textarea
+                                placeholder="Add a comment ..."
+                                rows={4}
+                                className="w-[400px] resize-none break-words"
+                            />
+
+                            <Button size="sm" className="w-fit ml-auto">
+                                Post
+                            </Button>
+                        </div>
+                    </div>
+                ) : (<div>{}</div>  )}
+
+                {isPending ? (
+                    <PageLoader/>
+                ):<CommentsList data={comments}/>}
             </div>
-          </div>
-        ) : (
-          <div>
-            {}
-          </div>
-        )}
-      </div>
-    </div>
-  );
+        </div>
+    );
 };
 
-interface CommentsListProps{
-  data:Comment[],
+interface CommentsListProps {
+    data: AppComment[],
 
 }
 
-const CommentsList= ({data}:CommentsListProps) =>{
+const CommentsList = ({ data }: CommentsListProps) => {
     return (
-         <ul className="flex flex-col gap-y-4">
-            {data.map((comment) =>(
+        <ul className="flex flex-col gap-y-4">
+            {data.map((comment) => (
                 <li key={comment.$id}>
                     <Card className="shadow-none rounded-lg hover:opacity-75 transition">
-                                    <CardContent className="p-4">
-                                        <p className="text-lg font-medium truncate">
-                                            {comment.authorId?.name}
-                                        </p>
-                                
-                                        <div className="size-1 rounded-full bg-neutral-300"/>
-                                        <div className="text-sm text-muted-foreground flex items-center">
-                                            <CalendarIcon className="size-3 mr-1"/>
-                                            <span className="truncate">
-                                                {formatDistanceToNow(new Date(comment.$update))}
-                                            </span>
-                                        </div>
-                                    </CardContent>
-                                </Card>
+                        <CardContent className="p-4">
+                            <p className="text-lg font-medium truncate">
+                                {comment.authorId}
+                            </p>
+                            <div className="flex items-center gap-x-2">
+                                <p></p>{comment.content}
+                            </div>
+                            <div className="size-1 rounded-full bg-neutral-300" />
+                            <div className="text-sm text-muted-foreground flex items-center">
+                                <CalendarIcon className="size-3 mr-1" />
+                                <span className="truncate">
+                                    {formatDistanceToNow(new Date(comment.$updatedAt))}
+                                </span>
+                            </div>
+                        </CardContent>
+                    </Card>
                 </li>
             ))}
             <li className="text-sm text-muted-foreground text-center hidden first-of-type:block">

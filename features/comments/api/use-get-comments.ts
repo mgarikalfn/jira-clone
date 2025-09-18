@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { client } from "@/lib/rpc";
+import { AppComment } from "../types";
 
 interface useGetCommentsProps {
   taskId:string
@@ -20,7 +21,7 @@ export const useGetComments = ({
       }
 
       const { data } = await response.json();
-      return data;
+      return data as AppComment[];
     },
   });
 

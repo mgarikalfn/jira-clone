@@ -1,7 +1,7 @@
 import { Models } from "node-appwrite";
 
 
-export type Comment = Models.Document & {
+export type AppComment = Models.Document & {
     authorId:string;
     content:string;
     workspaceId:string;
