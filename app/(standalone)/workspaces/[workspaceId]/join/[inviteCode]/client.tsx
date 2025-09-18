@@ -6,7 +6,7 @@ import { useGetWorkspaceInfo } from "@/features/workspaces/api/use-get-workspace
 import { JoinWorkspaceForm } from "@/features/workspaces/components/join-workspace-form";
 import { useWorkspaceId } from "@/features/workspaces/hooks/use-workspace-id";
 
-export const WorkspaceIdJoinPage =  () => {
+export const WorkspaceFormPage =  () => {
      const workspaceId = useWorkspaceId();
      const {data:initialValues , isLoading} = useGetWorkspaceInfo({workspaceId});
     

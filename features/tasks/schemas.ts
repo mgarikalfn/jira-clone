@@ -7,12 +7,7 @@ export const createTaskSchema = z.object({
   workspaceId: z.string().trim().min(1, "Workspace is required"),
   projectId: z.string().trim().min(1, "Project is required"),
 
-  // Zod v4 way: refine instead of required_error
-  dueDate: z.coerce.date().refine(
-    (val) => !!val,
-    { message: "Due date is required" }
-  ),
-
+dueDate: z.coerce.date<Date>(),
   assigneeId: z.string().trim().min(1, "Assignee is required"),
   description: z.string().optional(),
 });
