@@ -7,6 +7,8 @@ import { ID, Query } from "node-appwrite";
 import { getMember } from "@/features/members/utils";
 import { Task } from "@/features/tasks/types";
 import { AppComment } from "../types";
+import { Console } from "console";
+import { createAdminClient } from "@/lib/appwrite";
 
 const app = new Hono()
 
@@ -14,6 +16,7 @@ const app = new Hono()
     const currentUser = c.get("user");
     const databases = c.get("databases");
     const { taskId } = c.req.param();
+    const {users} = await createAdminClient();
 
     const task = await databases.getDocument<Task>(
       DATABASE_ID,
@@ -39,20 +42,42 @@ const app = new Hono()
       ]
     );
 
-    return c.json({ data: comments.documents });
+   
+
+const enrichedComments = await Promise.all(
+  comments.documents.map(async (comment) => {
+    try {   
+      const user = await users.get(comment.authorId);
+      return {
+        ...comment,
+        authorName: user.name,   // add name
+        // optional
+      };
+    } catch {
+      return {
+        ...comment,
+        authorName: "Unknown", // fallback
+      };
+    }
+  })
+);
+
+
+    return c.json({ data: enrichedComments });
   })
 
   .post(
-    "/",
+    "/:taskId",
     sessionMiddleware,
     zValidator("json", createCommentSchema),
     async (c) => {
       const user = c.get("user");
       const databases = c.get("databases");
+      const {taskId} = c.req.param();
 
-      const { content, taskId, workspaceId } = c.req.valid("json");
+      const { content, workspaceId } = c.req.valid("json");
 
-      const member = await getMember({
+       const member = await getMember({
         databases,
         workspaceId,
         userId: user.$id,
@@ -60,7 +85,7 @@ const app = new Hono()
 
       if (!member) {
         return c.json({ error: "unauthorized" }, 401);
-      }
+      } 
 
       const comment = await databases.createDocument(
         DATABASE_ID,
