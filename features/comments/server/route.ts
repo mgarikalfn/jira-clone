@@ -16,7 +16,7 @@ const app = new Hono()
     const currentUser = c.get("user");
     const databases = c.get("databases");
     const { taskId } = c.req.param();
-    const {users} = await createAdminClient();
+    const { users } = await createAdminClient();
 
     const task = await databases.getDocument<Task>(
       DATABASE_ID,
@@ -42,25 +42,25 @@ const app = new Hono()
       ]
     );
 
-   
 
-const enrichedComments = await Promise.all(
-  comments.documents.map(async (comment) => {
-    try {   
-      const user = await users.get(comment.authorId);
-      return {
-        ...comment,
-        authorName: user.name,   // add name
-        // optional
-      };
-    } catch {
-      return {
-        ...comment,
-        authorName: "Unknown", // fallback
-      };
-    }
-  })
-);
+
+    const enrichedComments = await Promise.all(
+      comments.documents.map(async (comment) => {
+        try {
+          const user = await users.get(comment.authorId);
+          return {
+            ...comment,
+            authorName: user.name,   // add name
+            // optional
+          };
+        } catch {
+          return {
+            ...comment,
+            authorName: "Unknown", // fallback
+          };
+        }
+      })
+    );
 
 
     return c.json({ data: enrichedComments });
@@ -73,11 +73,11 @@ const enrichedComments = await Promise.all(
     async (c) => {
       const user = c.get("user");
       const databases = c.get("databases");
-      const {taskId} = c.req.param();
+      const { taskId } = c.req.param();
 
       const { content, workspaceId } = c.req.valid("json");
 
-       const member = await getMember({
+      const member = await getMember({
         databases,
         workspaceId,
         userId: user.$id,
@@ -85,7 +85,7 @@ const enrichedComments = await Promise.all(
 
       if (!member) {
         return c.json({ error: "unauthorized" }, 401);
-      } 
+      }
 
       const comment = await databases.createDocument(
         DATABASE_ID,
@@ -101,6 +101,46 @@ const enrichedComments = await Promise.all(
 
       return c.json({ data: comment });
     }
-  );
+  )
+
+  .post(
+    "/:taskId/:parentId",
+    sessionMiddleware,
+    zValidator("json",createCommentSchema),
+    async (c) => {
+      const user = c.get("user");
+      const databases = c.get("databases");
+      const { taskId } = c.req.param();
+      const { parentId} = c.req.param();
+
+      const { content, workspaceId } = c.req.valid("json");
+
+      const member = await getMember({
+        databases,
+        workspaceId,
+        userId: user.$id,
+      });
+
+      if (!member) {
+        return c.json({ error: "unauthorized" }, 401);
+      }
+
+      const comment = await databases.createDocument(
+        DATABASE_ID,
+        COMMENTS_ID,
+        ID.unique(),
+        {
+          content,
+          authorId: user.$id,
+          workspaceId,
+          taskId,
+          parentId,
+        }
+      );
+
+      return c.json({ data: comment });
+
+    }
+  )
 
 export default app;
