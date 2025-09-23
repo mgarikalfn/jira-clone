@@ -9,6 +9,7 @@ import { Task } from "@/features/tasks/types";
 import { AppComment } from "../types";
 import { Console } from "console";
 import { createAdminClient } from "@/lib/appwrite";
+import { LIKES_ID } from "../../../config";
 
 const app = new Hono()
 
@@ -106,12 +107,12 @@ const app = new Hono()
   .post(
     "/:taskId/:parentId",
     sessionMiddleware,
-    zValidator("json",createCommentSchema),
+    zValidator("json", createCommentSchema),
     async (c) => {
       const user = c.get("user");
       const databases = c.get("databases");
       const { taskId } = c.req.param();
-      const { parentId} = c.req.param();
+      const { parentId } = c.req.param();
 
       const { content, workspaceId } = c.req.valid("json");
 
@@ -142,5 +143,44 @@ const app = new Hono()
 
     }
   )
+  .post(
+    "/:commentId/like",
+    sessionMiddleware,
+    async (c) => {
+      const user = c.get("user");
+      const databases = c.get("databases");
+      const { commentId } = c.req.param();
+
+      const existingLike = await databases.listDocuments(
+        DATABASE_ID,
+        LIKES_ID,
+        [
+          Query.equal("commentId", commentId),
+          Query.equal("userId", user.$id)
+        ]
+      )
+
+      if (existingLike.documents.length > 0) {
+        // Already liked → unlike
+        await databases.deleteDocument(
+          DATABASE_ID,
+          LIKES_ID, 
+          existingLike.documents[0].$id);
+        return c.json({liked:false})
+      } else {
+        // Not liked → like
+        await databases.createDocument(
+          DATABASE_ID,
+          LIKES_ID, 
+          ID.unique(),
+          {
+          userId: user.$id,
+          commentId,
+        });
+        return c.json({liked:true})
+      }
+    }
+  )
+
 
 export default app;
