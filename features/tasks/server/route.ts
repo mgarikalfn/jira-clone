@@ -244,6 +244,7 @@ const app = new Hono()
     
     }
 )
+
 .patch(
     '/:taskId',
     sessionMiddleware,
@@ -257,7 +258,10 @@ const app = new Hono()
             description,
             projectId,
             dueDate,
-            assigneeId
+            assigneeId,
+            priority,
+            typeOfTask,
+            storyPoint
         } = c.req.valid("json");
 
         const {taskId} = c.req.param();
@@ -289,7 +293,10 @@ const app = new Hono()
             projectId,
             dueDate,
             assigneeId,
-            description
+            description,
+            storyPoint,
+            typeOfTask,
+            priority
         },
     )
 
