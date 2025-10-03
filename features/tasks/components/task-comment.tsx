@@ -71,53 +71,56 @@ const CommentsList = ({ data }: CommentsListProps) => {
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
 
   return (
-   <ul className="w-full flex flex-col gap-y-4 bg-gray-100 rounded-lg p-4">
-  {data.map((comment) => (
-    <li key={comment.$id} className="flex flex-col gap-y-2 max-w-full">
-      <div className="flex gap-x-4 max-w-full">
-        <MemberAvatar name={comment.authorName} className="size-8 flex-shrink-0" />
-        <div className="flex-1 rounded-lg bg-white p-4 shadow-sm max-w-full">
-          {/* Author + date */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:gap-4">
-            <p className="text-sm font-semibold text-gray-800">
-              {comment.authorName}
-            </p>
-            <div className="flex items-center text-xs text-gray-500">
-              <CalendarIcon className="size-3 mr-1" />
-              <span>
-                {formatDistanceToNow(new Date(comment.$updatedAt))} ago
-              </span>
+    <ul className="flex flex-col gap-y-4 bg-gray-100 rounded-lg p-4">
+      {data.map((comment) => (
+        <li key={comment.$id} className="flex flex-col gap-y-2">
+          <div className="flex gap-x-4">
+            <MemberAvatar
+              name={comment.authorName}
+              className="size-8 flex-shrink-0"
+            />
+            <div className="flex-1 rounded-lg bg-white p-4 shadow-sm">
+              {/* Author + date */}
+              <div className="flex flex-col sm:flex-row sm:items-center sm:gap-4">
+                <p className="text-sm font-semibold text-gray-800">
+                  {comment.authorName}
+                </p>
+                <div className="flex items-center text-xs text-gray-500">
+                  <CalendarIcon className="size-3 mr-1" />
+                  <span>
+                    {formatDistanceToNow(new Date(comment.$updatedAt))} ago
+                  </span>
+                </div>
+              </div>
+
+              {/* Comment text */}
+              <p className="mt-2 text-sm text-gray-700">{comment.content}</p>
+
+              {/* Actions */}
+              <div className="pt-4 flex items-center gap-4">
+                <CornerUpLeftIcon
+                  size="16"
+                  className="cursor-pointer"
+                  onClick={() =>
+                    setReplyingTo(
+                      replyingTo === comment.$id ? null : comment.$id
+                    )
+                  }
+                />
+                <ThumbsUpIcon size="16" className="cursor-pointer" />
+                <TrashIcon size="16" className="cursor-pointer" />
+              </div>
             </div>
           </div>
 
-          {/* Comment text */}
-          <p className="mt-2 text-sm text-gray-700 break-words">
-            {comment.content}
-          </p>
-
-          {/* Actions */}
-          <div className="pt-4 flex items-center gap-4">
-            <CornerUpLeftIcon
-              size="16"
-              className="cursor-pointer"
-              onClick={() =>
-                setReplyingTo(replyingTo === comment.$id ? null : comment.$id)
-              }
-            />
-            <ThumbsUpIcon size="16" className="cursor-pointer" />
-            <TrashIcon size="16" className="cursor-pointer" />
-          </div>
-        </div>
-      </div>
-
-      {/* Reply form under the comment, indented */}
-      {replyingTo === comment.$id && (
-        <div className="ml-12 mt-2 max-w-full">
-          <ReplyCommentForm data={comment.$id} />
-        </div>
-      )}
-    </li>
-  ))}
-</ul>
-  )
+          {/* Reply form under the comment, indented */}
+          {replyingTo === comment.$id && (
+            <div className="ml-12 mt-2">
+              <ReplyCommentForm data={comment.$id} />
+            </div>
+          )}
+        </li>
+      ))}
+    </ul>
+  );
 };
