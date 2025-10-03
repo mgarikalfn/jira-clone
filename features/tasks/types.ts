@@ -8,6 +8,18 @@ export enum TaskStatus {
     DONE="DONE",
 }
 
+export enum TaskPriority{
+    HIGH="HIGH",
+    MEDIUM="MEDIUM",
+    LOW="LOW"
+}
+
+export enum TaskType{
+    BUG = "BUG",
+    USERSTORY="USERSTORY",
+    TASK="TASK"
+}
+
 export type Task = Models.Document & {
     name:string;
     status:TaskStatus;

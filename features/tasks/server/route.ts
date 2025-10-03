@@ -200,7 +200,10 @@ const app = new Hono()
             workspaceId,
             projectId,
             dueDate,
-            assigneeId
+            assigneeId,
+            priority,
+            storyPoint,
+            typeOfTask
         } = c.req.valid("json");
 
         const member = await getMember({ 
@@ -233,7 +236,7 @@ const app = new Hono()
         TASKS_ID,
         ID.unique(),
         {
-            name,status,workspaceId,projectId,dueDate,assigneeId,position:newPosition
+            name,status,workspaceId,projectId,dueDate,assigneeId,storyPoint,typeOfTask,priority,position:newPosition
         }
     )
 
