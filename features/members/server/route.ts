@@ -7,6 +7,7 @@ import z from "zod";
 import { getMember } from "../utils";
 import { DATABASE_ID, MEMBERS_ID } from "@/config";
 import { Member, MemberRole } from "../types";
+import { addActivityLog } from "@/lib/activityLog";
 
 const app = new Hono()
   .get(
@@ -51,6 +52,7 @@ const app = new Hono()
       });
     }
   )
+  
   .delete("/:memberId", sessionMiddleware, async (c) => {
     const { memberId } = c.req.param();
     const user = c.get("user");
@@ -87,6 +89,16 @@ const app = new Hono()
     }
 
     await databases.deleteDocument(DATABASE_ID, MEMBERS_ID, memberId);
+
+     await addActivityLog({
+        userId: user.$id,
+        timestamp: new Date().toISOString(),
+        entityType: "workspace",
+        entityId: memberToDelete.workspaceId,
+        action: "delete",
+        changes: JSON.stringify({ deletedBy: user.$id }),
+      });
+
 
     return c.json({ data: { $id: memberToDelete.$id } });
   })
@@ -134,6 +146,15 @@ const app = new Hono()
       }
 
       await databases.updateDocument(DATABASE_ID, MEMBERS_ID, memberId , {role});
+
+       await addActivityLog({
+        userId: user.$id,
+        timestamp: new Date().toISOString(),
+        entityType: "member",
+        entityId: memberId,
+        action: "update",
+        changes: JSON.stringify({ role }),
+      });
 
       return c.json({ data: { $id: memberToUpdate.$id } });
     }

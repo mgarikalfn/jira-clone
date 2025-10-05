@@ -7,7 +7,7 @@ import members from "@/features/members/server/route";
 import projects from "@/features/projects/server/route";
 import tasks from "@/features/tasks/server/route";
 import comments from "@/features/comments/server/route";
-
+import activityLog from "@/features/activityLogs/server/route"
 const app = new Hono().basePath("/api")
 
 const routes = app
@@ -17,7 +17,7 @@ const routes = app
 .route("/projects",projects)
 .route("/tasks",tasks)
 .route("/comments",comments)
-
+.route("/activity-log",activityLog)
 export const GET = handle(app);
 export const POST = handle(app);
 export const PATCH = handle(app);

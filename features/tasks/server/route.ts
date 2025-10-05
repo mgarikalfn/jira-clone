@@ -9,6 +9,7 @@ import { ID, Query } from "node-appwrite";
 import { Task, TaskStatus } from "../types";
 import { createAdminClient } from "@/lib/appwrite";
 import { Project } from "@/features/projects/types";
+import { addActivityLog } from "@/lib/activityLog";
 
 const app = new Hono()
 .get(
@@ -240,6 +241,15 @@ const app = new Hono()
         }
     )
 
+   await addActivityLog(databases,{
+      userId: user.$id,
+      timestamp: new Date().toISOString(),
+      entityType: "task",
+      entityId: task.$id,
+      action: "create",
+      changes: JSON.stringify({ name, status, dueDate, assigneeId }),
+    });
+
     return c.json({data:task});
     
     }
@@ -299,11 +309,21 @@ const app = new Hono()
             priority
         },
     )
+    await addActivityLog(databases,{
+      userId: user.$id,
+      timestamp: new Date().toISOString(),
+      entityType: "task",
+      entityId: taskId,
+      action: "update",
+      changes: JSON.stringify({name,status,dueDate,assigneeId}),
+    });
+
 
     return c.json({data:task});
     
     }
 )
+
 .post(
     '/',
     sessionMiddleware,
@@ -389,6 +409,15 @@ const app = new Hono()
             taskId,
         )
 
+        await addActivityLog(databases,{
+    userId: user.$id,
+    timestamp: new Date().toISOString(),
+    entityType: "task",
+    entityId: taskId,
+    action: "delete",
+    changes: JSON.stringify({ name: task.name }),
+  });
+
         return c.json({data:{$id:task.$id}})
     }
 )
@@ -446,6 +475,15 @@ const app = new Hono()
                 )
             })
         );
+ /* await addActivityLog({
+          userId: user.$id,
+          timestamp: new Date().toISOString(),
+          entityType: "task",
+          entityId: tasl$id,
+          action: "update",
+          changes: JSON.stringify({ status, position }),
+        }); */
+
 
         return c.json({data : updatedTasks})
     }

@@ -17,6 +17,7 @@ import z from "zod";
 import { Workspace } from "../types";
 import { endOfMonth, startOfMonth, subMonths } from "date-fns";
 import { TaskStatus } from "@/features/tasks/types";
+import { addActivityLog } from "@/lib/activityLog";
 
 const app = new Hono()
   .get("/", sessionMiddleware, async (c) => {
@@ -65,6 +66,7 @@ const app = new Hono()
 
     return c.json({ data: workspace });
   })
+
   .get("/:workspaceId/info", sessionMiddleware, async (c) => {
     const user = c.get("user");
     const databases = c.get("databases");
@@ -84,6 +86,7 @@ const app = new Hono()
       },
     });
   })
+
   .post(
     "/",
     zValidator("form", createWorkspaceSchema),
@@ -133,9 +136,21 @@ const app = new Hono()
         role: MemberRole.ADMIN,
       });
 
+      await addActivityLog(databases,{
+        userId: user.$id,
+        timestamp: new Date().toISOString(),
+        entityType: "workspace",
+        entityId: workspace.$id,
+        action: "create",
+        changes: JSON.stringify({
+          name,
+          imageUrl: uploadedImageUrl,
+        }),
+      });
       return c.json({ data: workspace });
     }
   )
+
   .patch(
     "/:workspaceId",
     sessionMiddleware,
@@ -186,9 +201,20 @@ const app = new Hono()
           imageUrl: uploadedImageUrl,
         }
       );
+
+         await addActivityLog(databases,{
+          userId: user.$id,
+          timestamp: new Date().toISOString(),
+          entityType: "workspace",
+          entityId: workspaceId,
+          action: "update",
+          changes: JSON.stringify(name),
+        });
+      
       return c.json({ data: workspace });
     }
   )
+
   .delete("/:workspaceId", sessionMiddleware, async (c) => {
     const databases = c.get("databases");
     const user = c.get("user");
@@ -205,10 +231,29 @@ const app = new Hono()
       return c.json({ error: "Unauthorized" }, 401);
     }
 
+    // Fetch the workspace before deleting to access its name
+    const workspace = await databases.getDocument<Workspace>(
+      DATABASE_ID,
+      WORKSPACES_ID,
+      workspaceId
+    );
+
     await databases.deleteDocument(DATABASE_ID, WORKSPACES_ID, workspaceId);
 
+     await addActivityLog(databases,{
+      userId: user.$id,
+      timestamp: new Date().toISOString(),
+      entityType: "workspace",
+      entityId: workspaceId,
+      action: "delete",
+      changes: JSON.stringify({
+        name: workspace.name,
+       
+      }),
+    });
     return c.json({ data: { $id: workspaceId } });
   })
+  
   .post("/:workspaceId/reset-invite-code", sessionMiddleware, async (c) => {
     const databases = c.get("databases");
     const user = c.get("user");

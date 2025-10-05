@@ -19,6 +19,7 @@ import { Project } from "../types";
 import { endOfMonth, startOfMonth, subMonths } from "date-fns";
 import { Task, TaskStatus } from "@/features/tasks/types";
 import { createAdminClient } from "@/lib/appwrite";
+import { addActivityLog } from "@/lib/activityLog";
 
 const app = new Hono()
   .get(
@@ -130,6 +131,15 @@ const app = new Hono()
         }
       );
 
+       await addActivityLog({
+        userId: user.$id,
+        timestamp: new Date().toISOString(),
+        entityType: "project",
+        entityId: project.$id,
+        action: "create",
+        changes: JSON.stringify({ name, imageFileId: File }),
+      });
+
       return c.json({ data: project });
     }
   )
@@ -190,6 +200,15 @@ const app = new Hono()
           imageUrl: uploadedImageUrl,
         }
       );
+
+       await addActivityLog({
+        userId: user.$id,
+        timestamp: new Date().toISOString(),
+        entityType: "project",
+        entityId: projectId,
+        action: "update",
+        changes: JSON.stringify({ name, imageFileId: File }),
+      });
       return c.json({ data: project });
     }
   )
@@ -217,6 +236,15 @@ const app = new Hono()
     }
 
     await databases.deleteDocument(DATABASE_ID, PROJECTS_ID, projectId);
+
+     await addActivityLog({
+      userId: user.$id,
+      timestamp: new Date().toISOString(),
+      entityType: "project",
+      entityId: projectId,
+      action: "delete",
+      changes: JSON.stringify({ name: existingProject.name }),
+    });
 
     return c.json({ data: { $id: existingProject.$id } });
   })

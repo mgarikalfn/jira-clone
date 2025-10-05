@@ -1,6 +1,6 @@
 "use client";
 
-import { SettingsIcon, UsersIcon } from "lucide-react";
+import { Activity, SettingsIcon, UsersIcon } from "lucide-react";
 import Link from "next/link";
 import {GoCheckCircle, GoCheckCircleFill, GoHome,GoHomeFill} from "react-icons/go";
 import { cn } from "@/lib/utils";
@@ -33,6 +33,12 @@ const routes = [
         icon:UsersIcon,
         activeIcon:UsersIcon
     },
+     {
+    label: "Activity Logs",
+    href: "/activity-logs",
+    icon: Activity,
+    activeIcon: Activity,
+  },
 ]
 
 
