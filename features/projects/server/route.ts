@@ -20,6 +20,7 @@ import { endOfMonth, startOfMonth, subMonths } from "date-fns";
 import { Task, TaskStatus } from "@/features/tasks/types";
 import { createAdminClient } from "@/lib/appwrite";
 import { addActivityLog } from "@/lib/activityLog";
+import { MemberRole } from "@/features/members/types";
 
 const app = new Hono()
   .get(
@@ -100,6 +101,10 @@ const app = new Hono()
         return c.json({ error: "unauthorized" }, 401);
       }
 
+      if (member.role !== MemberRole.ADMIN) {
+        return c.json({ error: "unauthorized" }, 401);
+      }
+
       let uploadedImageUrl: string | undefined;
 
       if (image instanceof File) {
@@ -131,7 +136,7 @@ const app = new Hono()
         }
       );
 
-       await addActivityLog({
+      await addActivityLog(databases, {
         userId: user.$id,
         timestamp: new Date().toISOString(),
         entityType: "project",
@@ -172,6 +177,10 @@ const app = new Hono()
         return c.json({ error: "unauthorized" }, 401);
       }
 
+      if (member.role !== MemberRole.ADMIN) {
+        return c.json({ error: "unauthorized" }, 401);
+      }
+
       let uploadedImageUrl: string | undefined;
 
       if (image instanceof File) {
@@ -201,7 +210,7 @@ const app = new Hono()
         }
       );
 
-       await addActivityLog({
+      await addActivityLog(databases, {
         userId: user.$id,
         timestamp: new Date().toISOString(),
         entityType: "project",
@@ -235,9 +244,13 @@ const app = new Hono()
       return c.json({ error: "Unauthorized" }, 401);
     }
 
+    if (member.role !== MemberRole.ADMIN) {
+      return c.json({ error: "unauthorized" }, 401);
+    }
+
     await databases.deleteDocument(DATABASE_ID, PROJECTS_ID, projectId);
 
-     await addActivityLog({
+    await addActivityLog(databases, {
       userId: user.$id,
       timestamp: new Date().toISOString(),
       entityType: "project",
@@ -445,99 +458,117 @@ const app = new Hono()
     });
   })
 
- .get("/:projectId/analytics/workload", sessionMiddleware, async (c) => {
-  const databases = c.get("databases");
-  const { projectId } = c.req.param();
-  const { users } = await createAdminClient();
+  .get("/:projectId/analytics/workload", sessionMiddleware, async (c) => {
+    const databases = c.get("databases");
+    const { projectId } = c.req.param();
+    const { users } = await createAdminClient();
 
-  try {
-    // 1. Get the project to find its workspace
-    const project = await databases.getDocument(DATABASE_ID, PROJECTS_ID, projectId);
-    const workspaceId = project.workspaceId;
+    try {
+      // 1. Get the project to find its workspace
+      const project = await databases.getDocument(
+        DATABASE_ID,
+        PROJECTS_ID,
+        projectId
+      );
+      const workspaceId = project.workspaceId;
 
-    console.log(`Project ${projectId} belongs to workspace ${workspaceId}`);
+      console.log(`Project ${projectId} belongs to workspace ${workspaceId}`);
 
-    // 2. Fetch tasks for this project
-    const tasks = await databases.listDocuments<Task>(DATABASE_ID, TASKS_ID, [
-      Query.equal("projectId", projectId),
-    ]);
+      // 2. Fetch tasks for this project
+      const tasks = await databases.listDocuments<Task>(DATABASE_ID, TASKS_ID, [
+        Query.equal("projectId", projectId),
+      ]);
 
-    console.log(`Found ${tasks.total} tasks`);
+      console.log(`Found ${tasks.total} tasks`);
 
-    // 3. Get unique assigneeIds from tasks (these are member IDs)
-    const assigneeMemberIds = [...new Set(
-      tasks.documents
-        .map(task => task.assigneeId)
-        .filter((id): id is string => !!id)
-    )];
+      // 3. Get unique assigneeIds from tasks (these are member IDs)
+      const assigneeMemberIds = [
+        ...new Set(
+          tasks.documents
+            .map((task) => task.assigneeId)
+            .filter((id): id is string => !!id)
+        ),
+      ];
 
-    console.log('Assignee Member IDs from tasks:', assigneeMemberIds);
+      console.log("Assignee Member IDs from tasks:", assigneeMemberIds);
 
-    if (assigneeMemberIds.length === 0) {
-      return c.json({ data: [] });
+      if (assigneeMemberIds.length === 0) {
+        return c.json({ data: [] });
+      }
+
+      // 4. Fetch member documents using the member IDs from tasks
+      const members = await databases.listDocuments(DATABASE_ID, MEMBERS_ID, [
+        Query.equal("$id", assigneeMemberIds),
+      ]);
+
+      console.log(`Found ${members.total} relevant members`);
+
+      // 5. Process each member
+      const result = await Promise.all(
+        members.documents.map(async (member) => {
+          try {
+            // Get user details from the member's userId
+            const user = await users.get(member.userId);
+
+            // Get tasks assigned to this member (using member.$id)
+            const assignedTasks = tasks.documents.filter(
+              (task) => task.assigneeId === member.$id
+            );
+
+            console.log(
+              `Member ${member.$id} (${user.name}) has ${assignedTasks.length} tasks`
+            );
+
+            // Calculate metrics
+            const completedTasks = assignedTasks.filter(
+              (t) => t.startedAt && t.completedAt
+            );
+
+            const totalCycleTime = completedTasks.reduce((sum, task) => {
+              const start = new Date(task.startedAt!).getTime();
+              const end = new Date(task.completedAt!).getTime();
+              return sum + (end - start) / (1000 * 60 * 60 * 24);
+            }, 0);
+
+            const averageCycleTime =
+              completedTasks.length > 0
+                ? totalCycleTime / completedTasks.length
+                : 0;
+
+            return {
+              name: user.name,
+              email: user.email,
+              tasks: assignedTasks.length,
+              storyPoints: assignedTasks.reduce(
+                (sum, t) => sum + (t.storyPoint || 0),
+                0
+              ),
+              cycleTime: Number(averageCycleTime.toFixed(1)),
+              percentage:
+                tasks.total > 0
+                  ? Number(
+                      ((assignedTasks.length / tasks.total) * 100).toFixed(1)
+                    )
+                  : 0,
+            };
+          } catch (error) {
+            console.warn(`Error processing member ${member.$id}:`, error);
+            return null;
+          }
+        })
+      );
+
+      const validResults = result.filter((member) => member !== null);
+      const sortedResults = validResults.sort((a, b) => b.tasks - a.tasks);
+
+      console.log(
+        `Final result: ${sortedResults.length} team members with workload data`
+      );
+      return c.json({ data: sortedResults });
+    } catch (error) {
+      console.error("Error in workload endpoint:", error);
+      return c.json({ error: "Failed to fetch workload data" }, 500);
     }
-
-    // 4. Fetch member documents using the member IDs from tasks
-    const members = await databases.listDocuments(DATABASE_ID, MEMBERS_ID, [
-      Query.equal("$id", assigneeMemberIds),
-    ]);
-
-    console.log(`Found ${members.total} relevant members`);
-
-    // 5. Process each member
-    const result = await Promise.all(
-      members.documents.map(async (member) => {
-        try {
-          // Get user details from the member's userId
-          const user = await users.get(member.userId);
-          
-          // Get tasks assigned to this member (using member.$id)
-          const assignedTasks = tasks.documents.filter(
-            task => task.assigneeId === member.$id
-          );
-
-          console.log(`Member ${member.$id} (${user.name}) has ${assignedTasks.length} tasks`);
-
-          // Calculate metrics
-          const completedTasks = assignedTasks.filter(t => t.startedAt && t.completedAt);
-          
-          const totalCycleTime = completedTasks.reduce((sum, task) => {
-            const start = new Date(task.startedAt!).getTime();
-            const end = new Date(task.completedAt!).getTime();
-            return sum + ((end - start) / (1000 * 60 * 60 * 24));
-          }, 0);
-
-          const averageCycleTime = completedTasks.length > 0 
-            ? totalCycleTime / completedTasks.length 
-            : 0;
-
-          return {
-            name: user.name,
-            email: user.email,
-            tasks: assignedTasks.length,
-            storyPoints: assignedTasks.reduce((sum, t) => sum + (t.storyPoint || 0), 0),
-            cycleTime: Number(averageCycleTime.toFixed(1)),
-            percentage: tasks.total > 0 
-              ? Number(((assignedTasks.length / tasks.total) * 100).toFixed(1))
-              : 0,
-          };
-        } catch (error) {
-          console.warn(`Error processing member ${member.$id}:`, error);
-          return null;
-        }
-      })
-    );
-
-    const validResults = result.filter(member => member !== null);
-    const sortedResults = validResults.sort((a, b) => b.tasks - a.tasks);
-
-    console.log(`Final result: ${sortedResults.length} team members with workload data`);
-    return c.json({ data: sortedResults });
-
-  } catch (error) {
-    console.error('Error in workload endpoint:', error);
-    return c.json({ error: 'Failed to fetch workload data' }, 500);
-  }
-});
+  });
 
 export default app;

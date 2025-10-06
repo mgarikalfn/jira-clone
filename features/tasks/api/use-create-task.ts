@@ -20,8 +20,13 @@ export const useCreateTask = () =>{
         mutationFn:async ({json}) => {
             const response = await client.api.tasks["$post"]({json});
 
-             if(!response.ok){
-                throw new Error("Failed to create tasks");
+            if(!response.ok){
+                let errorMsg = "Failed to delete tasks";
+                try{
+                    const errorData = await response.json();
+                     if ("error" in errorData && errorData.error) errorMsg = errorData.error;
+                }catch{}
+                throw new Error(errorMsg);
             }
             return await response.json();
         },
@@ -29,8 +34,8 @@ export const useCreateTask = () =>{
             toast.success("task created");
             queryClient.invalidateQueries({queryKey:["tasks"]});
         },
-        onError:() => {
-            toast.error("Failed to create task");
+        onError:(error) => {
+            toast.error(error.message);
         }
      })
 

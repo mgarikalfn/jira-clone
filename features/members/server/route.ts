@@ -90,7 +90,7 @@ const app = new Hono()
 
     await databases.deleteDocument(DATABASE_ID, MEMBERS_ID, memberId);
 
-     await addActivityLog({
+     await addActivityLog(databases,{
         userId: user.$id,
         timestamp: new Date().toISOString(),
         entityType: "workspace",
@@ -147,7 +147,7 @@ const app = new Hono()
 
       await databases.updateDocument(DATABASE_ID, MEMBERS_ID, memberId , {role});
 
-       await addActivityLog({
+       await addActivityLog(databases,{
         userId: user.$id,
         timestamp: new Date().toISOString(),
         entityType: "member",

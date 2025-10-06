@@ -19,8 +19,13 @@ export const useUpdateTask = () =>{
         mutationFn:async ({json,param}) => {
             const response = await client.api.tasks[":taskId"]["$patch"]({json,param});
 
-             if(!response.ok){
-                throw new Error("Failed to update tasks");
+            if(!response.ok){
+                let errorMsg = "Failed to delete tasks";
+                try{
+                    const errorData = await response.json();
+                     if ("error" in errorData && errorData.error) errorMsg = errorData.error;
+                }catch{}
+                throw new Error(errorMsg);
             }
             return await response.json();
         },
@@ -30,8 +35,8 @@ export const useUpdateTask = () =>{
             queryClient.invalidateQueries({queryKey:["tasks"]});
             queryClient.invalidateQueries({queryKey:["task",data.$id]})
         },
-        onError:() => {
-            toast.error("Failed to update task");
+        onError:(error) => {
+            toast.error(error.message);
         }
      })
 
