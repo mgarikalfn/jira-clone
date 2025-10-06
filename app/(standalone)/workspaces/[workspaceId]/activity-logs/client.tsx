@@ -19,7 +19,9 @@ import {
 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
-import { ReactNode } from "react";
+import { ReactNode, useMemo } from "react";
+import { useGetProjectAnalyticsWorkload } from "@/features/projects/api/use-get-project-analytics-workload";
+import { useProjectId } from "@/features/projects/hooks/use-project-id";
 
 type ActivityLog = {
   $id: string;
@@ -118,8 +120,11 @@ const BackButton = ({ workspaceId }: { workspaceId: string }) => {
   );
 };
 
-const ChangeItem = ({ field, value }: { field: string; value: any }) => {
+const ChangeItem = ({ field, value, getMemberName }: { field: string; value: any; getMemberName?: (id: string) => string }) => {
   const getDisplayValue = (val: any): string => {
+    if ((field.toLowerCase() === "assigneeid" || field.toLowerCase() === "assignee") && typeof val === "string" && getMemberName) {
+      return getMemberName(val);
+    }
     if (val === null || val === undefined) return "None";
     if (typeof val === "boolean") return val ? "Yes" : "No";
     if (typeof val === "object") return JSON.stringify(val);
@@ -176,22 +181,24 @@ const StatusChange = ({ oldStatus, newStatus }: { oldStatus: string; newStatus: 
   );
 };
 
-const AssigneeChange = ({ oldAssignee, newAssignee }: { oldAssignee: string; newAssignee: string }) => {
+const AssigneeChange = ({ oldAssigneeId, newAssigneeId, getMemberName }: { oldAssigneeId: string; newAssigneeId: string; getMemberName: (id: string) => string }) => {
+  const oldName = oldAssigneeId ? getMemberName(oldAssigneeId) : "";
+  const newName = newAssigneeId ? getMemberName(newAssigneeId) : "";
   return (
     <div className="flex items-center gap-3 p-3 bg-green-50 rounded-lg border border-green-200">
       <User className="w-4 h-4 text-green-600" />
       <div className="flex-1">
         <span className="text-sm font-medium text-green-900">
-          {oldAssignee ? "Reassigned" : "Assigned"}
+          {oldName ? "Reassigned" : "Assigned"}
         </span>
         <div className="flex items-center gap-2 mt-1">
-          {oldAssignee && (
+          {oldName && (
             <>
-              <span className="text-sm text-gray-600 line-through">{oldAssignee}</span>
+              <span className="text-sm text-gray-600 line-through">{oldName}</span>
               <span className="text-gray-500">→</span>
             </>
           )}
-          <span className="text-sm font-medium text-green-800">{newAssignee}</span>
+          <span className="text-sm font-medium text-green-800">{newName}</span>
         </div>
       </div>
     </div>
@@ -208,9 +215,10 @@ const hasFromToProperties = (obj: unknown): obj is { from: unknown; to: unknown 
   );
 };
 
-export function ActivityLogsClient() {
+const ActivityLogsPage = () => {
   const router = useRouter();
   const { workspaceId } = useParams() as { workspaceId: string };
+  const projectId = useProjectId();
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["activityLogs", workspaceId],
@@ -223,11 +231,25 @@ export function ActivityLogsClient() {
         ...log,
         userEmail: log.userEmail,
         userName: log.userName || log.userEmail?.split('@')[0] || "User",
-        entityName: log.entityName || "Unknown Entity",
+        entityName: log.entityName || log.entityId || "Unknown Entity",
         changes: log.changes,
       })) as ActivityLog[];
     },
   });
+
+  // Fetch workload for the project to get assignee names
+  const { data: workload } = useGetProjectAnalyticsWorkload({ projectId });
+  // Memoize a map from userId to member name (like report-dashboard)
+  const memberIdToName = useMemo(() => {
+    if (!workload) return {};
+    const map: Record<string, string> = {};
+    for (const member of workload) {
+      map[member.email] = member.name || member.email;
+    }
+    return map;
+  }, [workload]);
+  // Helper to get member name by id
+  const getMemberName = (id: string) => memberIdToName[id] || id;
 
   if (isLoading) return <LoadingSkeleton />;
   if (error)
@@ -283,9 +305,6 @@ export function ActivityLogsClient() {
                     <span className="text-sm text-gray-500 ml-auto">
                       {format(new Date(log.timestamp), "MMM dd, yyyy")}
                     </span>
-                    <span className="text-sm text-gray-400">
-                      {format(new Date(log.timestamp), "h:mm a")}
-                    </span>
                   </div>
 
                   {/* Entity Name */}
@@ -312,8 +331,9 @@ export function ActivityLogsClient() {
                         hasFromToProperties(log.changes.assigneeId)
                       ) ? (
                         <AssigneeChange 
-                          oldAssignee={String((log.changes.assigneeId as { from: unknown; to: unknown }).from)} 
-                          newAssignee={String((log.changes.assigneeId as { from: unknown; to: unknown }).to)} 
+                          oldAssigneeId={String((log.changes.assigneeId as { from: unknown; to: unknown }).from)} 
+                          newAssigneeId={String((log.changes.assigneeId as { from: unknown; to: unknown }).to)} 
+                          getMemberName={getMemberName}
                         />
                       ) : null}
                       
@@ -326,7 +346,7 @@ export function ActivityLogsClient() {
                             return null;
                           }
                           
-                          return <ChangeItem key={key} field={key} value={value} />;
+                          return <ChangeItem key={key} field={key} value={value} getMemberName={getMemberName} />;
                         })}
                       </div>
                     </div>
@@ -351,4 +371,6 @@ export function ActivityLogsClient() {
       </div>
     </div>
   );
-}
+};
+
+export default ActivityLogsPage;
