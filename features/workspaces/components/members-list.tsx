@@ -14,10 +14,17 @@ import { useDeleteMember } from "@/features/members/api/use-delete-member";
 import { useUpdateMember } from "@/features/members/api/use-update-member";
 import { MemberRole } from "@/features/members/types";
 import { useConfirm } from "@/hooks/use-confirm";
+import { RoleGuard } from "@/components/role-guard";
+import { useCurrent } from "@/features/auth/api/use-current";
+import { PageError } from "@/components/page-error";
+
 
 export const MembersList = () => {
     const workspaceId = useWorkspaceId();
-
+    const {data:user} = useCurrent();
+    if(!user){
+        return <PageError message="user not found"/>
+    }
     const [ConfirmDialog,confirm] = useConfirm(
         "Remove member",
         "This member will be removed from the workspace",
@@ -85,9 +92,12 @@ export const MembersList = () => {
                             </div>
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
+                                    <RoleGuard role={MemberRole.ADMIN} workspaceId={workspaceId} userId={user.$id}>
+
                                      <Button className="ml-auto" variant="secondary" size="icon">
                                         <MoreVerticalIcon className="size-4 text-muted-foreground"/>
                                     </Button>
+                                    </RoleGuard>
                                 </DropdownMenuTrigger>
                                 
                                 <DropdownMenuContent side="bottom" align="end">

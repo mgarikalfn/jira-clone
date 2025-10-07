@@ -14,9 +14,13 @@ import { WorkspaceAvatar } from "@/features/workspaces/components/workspace-avat
 import { useRouter } from "next/navigation";
 import { useWorkspaceId } from "@/features/workspaces/hooks/use-workspace-id";
 import { useCreateWorkspaceModal } from "@/features/workspaces/hooks/use-create-workspace-modal";
+import { RoleGuard } from "./role-guard";
+import { useCurrent } from "@/features/auth/api/use-current";
+import { MemberRole } from "@/features/members/types";
 
 export const WorkspaceSwitcher = () => {
   const workspaceId = useWorkspaceId();
+  const { data: user } = useCurrent();
   const router = useRouter();
   const { data: workspaces } = useGetWorkspaces();
   const { open } = useCreateWorkspaceModal();
@@ -29,10 +33,16 @@ export const WorkspaceSwitcher = () => {
     <div className="flex flex-col gap-y-2">
       <div className="flex items-center justify-between">
         <p className="text-xs uppercase text-neutral-500">Workspaces</p>
-        <RiAddCircleFill
-          onClick={open}
-          className="size-5 text-neutral-500 cursor-pointer hover:opacity-75 transition"
-        />
+        <RoleGuard
+          role={MemberRole.ADMIN}
+          workspaceId={workspaceId}
+          userId={user?.$id}
+        >
+          <RiAddCircleFill
+            onClick={open}
+            className="size-5 text-neutral-500 cursor-pointer hover:opacity-75 transition"
+          />
+        </RoleGuard>
       </div>
 
       <Select onValueChange={onselect} value={workspaceId}>

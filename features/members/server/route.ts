@@ -30,9 +30,11 @@ const app = new Hono()
         return c.json({ error: "unauthorized" }, 401);
       }
 
-      const members = await databases.listDocuments<Member>(DATABASE_ID, MEMBERS_ID, [
-        Query.equal("workspaceId", workspaceId),
-      ]);
+      const members = await databases.listDocuments<Member>(
+        DATABASE_ID,
+        MEMBERS_ID,
+        [Query.equal("workspaceId", workspaceId)]
+      );
 
       const populatedMembers = await Promise.all(
         members.documents.map(async (member) => {
@@ -52,7 +54,46 @@ const app = new Hono()
       });
     }
   )
-  
+
+  .get("/:memberId", sessionMiddleware, async (c) => {
+    const { memberId } = c.req.param(); // This is the userId, not the document $id
+    const databases = c.get("databases");
+    const { users } = await createAdminClient();
+
+    // Use listDocuments to query by userId column
+    const memberResponse = await databases.listDocuments(
+      DATABASE_ID,
+      MEMBERS_ID,
+      [Query.equal("userId", memberId)]
+    );
+
+    if (memberResponse.total === 0) {
+      return c.json({ error: "Member not found" }, 404);
+    }
+
+    const memberDoc = memberResponse.documents[0];
+
+    // Get user info from Appwrite Users collection
+    let userInfo = null;
+    try {
+      userInfo = await users.get(memberDoc.userId);
+    } catch (e) {
+      // fallback if user not found
+      userInfo = { name: "Unknown", email: "" };
+    }
+
+    return c.json({
+      data: {
+        $id: memberDoc.$id,
+        userId: memberDoc.userId,
+        workspaceId: memberDoc.workspaceId,
+        role: memberDoc.role,
+        name: userInfo.name,
+        email: userInfo.email,
+      },
+    });
+  })
+
   .delete("/:memberId", sessionMiddleware, async (c) => {
     const { memberId } = c.req.param();
     const user = c.get("user");
@@ -90,15 +131,14 @@ const app = new Hono()
 
     await databases.deleteDocument(DATABASE_ID, MEMBERS_ID, memberId);
 
-     await addActivityLog(databases,{
-        userId: user.$id,
-        timestamp: new Date().toISOString(),
-        entityType: "workspace",
-        entityId: memberToDelete.workspaceId,
-        action: "delete",
-        changes: JSON.stringify({ deletedBy: user.$id }),
-      });
-
+    await addActivityLog(databases, {
+      userId: user.$id,
+      timestamp: new Date().toISOString(),
+      entityType: "workspace",
+      entityId: memberToDelete.workspaceId,
+      action: "delete",
+      changes: JSON.stringify({ deletedBy: user.$id }),
+    });
 
     return c.json({ data: { $id: memberToDelete.$id } });
   })
@@ -111,7 +151,7 @@ const app = new Hono()
       const { memberId } = c.req.param();
       const user = c.get("user");
       const databases = c.get("databases");
-      const {role} = c.req.valid("json");
+      const { role } = c.req.valid("json");
 
       const memberToUpdate = await databases.getDocument(
         DATABASE_ID,
@@ -135,9 +175,7 @@ const app = new Hono()
         return c.json({ error: "unauthorized" }, 401);
       }
 
-      if (
-        member.role !== MemberRole.ADMIN
-      ) {
+      if (member.role !== MemberRole.ADMIN) {
         return c.json({ error: "unauthorized" }, 401);
       }
 
@@ -145,9 +183,11 @@ const app = new Hono()
         return c.json({ error: "cannot downgrade the only member" }, 401);
       }
 
-      await databases.updateDocument(DATABASE_ID, MEMBERS_ID, memberId , {role});
+      await databases.updateDocument(DATABASE_ID, MEMBERS_ID, memberId, {
+        role,
+      });
 
-       await addActivityLog(databases,{
+      await addActivityLog(databases, {
         userId: user.$id,
         timestamp: new Date().toISOString(),
         entityType: "member",

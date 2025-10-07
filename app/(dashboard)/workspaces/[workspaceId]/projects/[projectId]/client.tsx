@@ -13,9 +13,15 @@ import { PageLoader } from "@/components/page-loader";
 import { Button } from "@/components/ui/button";
 import { useGetProjectAnalytics } from "@/features/projects/api/use-get-project-analytics";
 import { Analytics } from "@/components/analytics";
+import { RoleGuard } from "@/components/role-guard";
+import { MemberRole } from "@/features/members/types";
+import { useWorkspaceId } from "@/features/workspaces/hooks/use-workspace-id";
+import { useCurrent } from "@/features/auth/api/use-current";
 
 export const ProjectIdClient =() => {
     const projectId =useProjectId();
+    const workspaceId=useWorkspaceId();
+    const {data:user} = useCurrent();
     const {data:project, isLoading:isLoadingProject} = useGetProject({projectId});
     const {data:analytics , isLoading:isLoadingAnalytics} = useGetProjectAnalytics({projectId})
 
@@ -27,6 +33,9 @@ export const ProjectIdClient =() => {
 
     if(!project){
         return <PageError message="project not found"/>
+    }
+    if(!user){
+        return <PageError message="user not found"/>
     }
     
     return (
@@ -42,12 +51,24 @@ export const ProjectIdClient =() => {
                 <p className="text-lg font-semibold">{project.name}</p>
             </div>
             <div>
+                <RoleGuard role={MemberRole.ADMIN} workspaceId={workspaceId} userId={user.$id}>
                 <Button variant="secondary" size="sm" asChild>
                     <Link href={`/workspaces/${project.workspaceId}/projects/${project.$id}/settings`}>
                     <PencilIcon className="size-4 mr-2" />
                     Edit Project
                     </Link>
                 </Button>
+                </RoleGuard>
+
+                  <RoleGuard role={MemberRole.ADMIN} workspaceId={workspaceId} userId={user.$id}>
+                <Button variant="secondary" size="sm" asChild>
+                    <Link href={`/workspaces/${project.workspaceId}/projects/${project.$id}/report`}>
+                    <PencilIcon className="size-4 mr-2" />
+                     Project Report
+                    </Link>
+                </Button>
+                </RoleGuard>
+
             </div>
           </div>
           {analytics ? (

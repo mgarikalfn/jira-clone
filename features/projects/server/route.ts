@@ -73,6 +73,8 @@ const app = new Hono()
       userId: user.$id,
     });
 
+    // You can access the role using member.role if member is not null
+
     if (!member) {
       return c.json({ error: "Unauthorized" }, 401);
     }
