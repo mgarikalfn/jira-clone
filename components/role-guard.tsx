@@ -1,8 +1,9 @@
+"use client"
 // components/RoleGuard.tsx
 import { ReactNode } from "react";
 import { useUserRole } from "@/hooks/use-user-role";
 import { MemberRole } from "@/features/members/types";
-import LoadingPage from "@/app/loading";
+import { Loader2 } from "lucide-react";
 
 interface RoleGuardProps {
   role: MemberRole | MemberRole[];
@@ -27,7 +28,11 @@ export function RoleGuard({
   const { role: userRole, isLoading } = useUserRole({ workspaceId, userId });
 
   if (isLoading) {
-    return <LoadingPage/>
+    return (
+      <div className="flex items-center justify-center p-2">
+        <Loader2 className="size-4 animate-spin text-muted-foreground" />
+      </div>
+    );
   }
 
   const allowedRoles = Array.isArray(role) ? role : [role];

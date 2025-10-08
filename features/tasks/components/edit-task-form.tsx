@@ -22,14 +22,13 @@ import {
 import { DottedSeparator } from "@/components/ui/dotted-separator";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem } from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 import { useCreateTask } from "../api/use-create-task";
 import { cn } from "@/lib/utils";
 import { createTaskSchema } from "../schemas";
 import { useWorkspaceId } from "@/features/workspaces/hooks/use-workspace-id";
 import { DatePicker } from "@/components/ui/date-picker";
-import { SelectTrigger, SelectValue } from "@radix-ui/react-select";
 import { MemberAvatar } from "@/features/members/components/member-avatar";
 import { Task, TaskPriority, TaskStatus, TaskType } from "../types";
 import { ProjectAvatar } from "@/features/projects/components/project-avatar";
@@ -42,6 +41,16 @@ interface EditTaskFormProps {
   initialValues: Task;
 }
 
+// Enhanced schema with story point validation
+const editTaskSchema = createTaskSchema
+  .omit({
+    workspaceId: true,
+    description: true,
+  })
+  .extend({
+    storyPoint: z.number().min(0, "Story points cannot be negative").optional(),
+  });
+
 export const EditTaskForm = ({
   onCancel,
   projectOptions,
@@ -53,22 +62,18 @@ export const EditTaskForm = ({
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const formSchema = createTaskSchema.omit({
-    workspaceId: true,
-    description: true,
-  });
-
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
+  const form = useForm<z.infer<typeof editTaskSchema>>({
+    resolver: zodResolver(editTaskSchema),
     defaultValues: {
       ...initialValues,
       dueDate: initialValues.dueDate
         ? new Date(initialValues.dueDate)
         : undefined,
+      storyPoint: initialValues.storyPoint || undefined,
     },
   });
 
-  const onSubmit = (values: z.infer<typeof formSchema>) => {
+  const onSubmit = (values: z.infer<typeof editTaskSchema>) => {
     mutate(
       { json: values, param: { taskId: initialValues.$id } },
       {
@@ -98,10 +103,11 @@ export const EditTaskForm = ({
                 name="name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>task Name</FormLabel>
+                    <FormLabel>Task Name</FormLabel>
                     <FormControl>
                       <Input {...field} placeholder="Enter task name" />
                     </FormControl>
+                    <FormMessage />
                   </FormItem>
                 )}
               />
@@ -125,16 +131,29 @@ export const EditTaskForm = ({
                 name="storyPoint"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>storyPoint</FormLabel>
+                    <FormLabel>Story Points</FormLabel>
                     <FormControl>
                       <Input
                         {...field}
                         value={field.value ?? ""}
-                        onChange={(e) => field.onChange(Number(e.target.value))}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          // Allow empty or positive numbers only
+                          if (value === "" || /^\d+$/.test(value)) {
+                            field.onChange(value === "" ? undefined : Number(value));
+                          }
+                        }}
+                        onBlur={(e) => {
+                          if (e.target.value === "") {
+                            field.onChange(undefined);
+                          }
+                        }}
                         type="number"
-                        placeholder="Enter estimated storyPoint"
+                        min="0"
+                        placeholder={initialValues.storyPoint ? initialValues.storyPoint.toString() : "Enter story points"}
                       />
                     </FormControl>
+                    <FormMessage />
                   </FormItem>
                 )}
               />
@@ -146,15 +165,14 @@ export const EditTaskForm = ({
                   <FormItem>
                     <FormLabel>Assignee</FormLabel>
                     <Select
-                      defaultValue={field.value}
+                      value={field.value}
                       onValueChange={field.onChange}
                     >
                       <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="select assignee" />
+                        <SelectTrigger className="w-full border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50">
+                          <SelectValue placeholder="Select assignee" />
                         </SelectTrigger>
                       </FormControl>
-                      <FormMessage />
                       <SelectContent>
                         {memberOptions.map((member) => (
                           <SelectItem key={member.id} value={member.id}>
@@ -169,6 +187,7 @@ export const EditTaskForm = ({
                         ))}
                       </SelectContent>
                     </Select>
+                    <FormMessage />
                   </FormItem>
                 )}
               />
@@ -180,15 +199,14 @@ export const EditTaskForm = ({
                   <FormItem>
                     <FormLabel>Status</FormLabel>
                     <Select
-                      defaultValue={field.value}
+                      value={field.value}
                       onValueChange={field.onChange}
                     >
                       <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="select status" />
+                        <SelectTrigger className="w-full border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50">
+                          <SelectValue placeholder="Select status" />
                         </SelectTrigger>
                       </FormControl>
-                      <FormMessage />
                       <SelectContent>
                         <SelectItem value={TaskStatus.BACKLOG}>
                           Backlog
@@ -203,6 +221,7 @@ export const EditTaskForm = ({
                         <SelectItem value={TaskStatus.DONE}>Done</SelectItem>
                       </SelectContent>
                     </Select>
+                    <FormMessage />
                   </FormItem>
                 )}
               />
@@ -214,15 +233,14 @@ export const EditTaskForm = ({
                   <FormItem>
                     <FormLabel>Project</FormLabel>
                     <Select
-                      defaultValue={field.value}
+                      value={field.value}
                       onValueChange={field.onChange}
                     >
                       <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="select project" />
+                        <SelectTrigger className="w-full border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50">
+                          <SelectValue placeholder="Select project" />
                         </SelectTrigger>
                       </FormControl>
-                      <FormMessage />
                       <SelectContent>
                         {projectOptions.map((project) => (
                           <SelectItem key={project.id} value={project.id}>
@@ -238,6 +256,7 @@ export const EditTaskForm = ({
                         ))}
                       </SelectContent>
                     </Select>
+                    <FormMessage />
                   </FormItem>
                 )}
               />
@@ -249,15 +268,14 @@ export const EditTaskForm = ({
                   <FormItem>
                     <FormLabel>Priority</FormLabel>
                     <Select
-                      defaultValue={field.value}
+                      value={field.value}
                       onValueChange={field.onChange}
                     >
                       <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="select priority" />
+                        <SelectTrigger className="w-full border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50">
+                          <SelectValue placeholder="Select priority" />
                         </SelectTrigger>
                       </FormControl>
-                      <FormMessage />
                       <SelectContent>
                         <SelectItem value={TaskPriority.HIGH}>High</SelectItem>
                         <SelectItem value={TaskPriority.MEDIUM}>
@@ -266,6 +284,7 @@ export const EditTaskForm = ({
                         <SelectItem value={TaskPriority.LOW}>Low</SelectItem>
                       </SelectContent>
                     </Select>
+                    <FormMessage />
                   </FormItem>
                 )}
               />
@@ -275,28 +294,29 @@ export const EditTaskForm = ({
                 name="typeOfTask"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Task type</FormLabel>
+                    <FormLabel>Task Type</FormLabel>
                     <Select
-                      defaultValue={field.value}
+                      value={field.value}
                       onValueChange={field.onChange}
                     >
                       <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="select task type" />
+                        <SelectTrigger className="w-full border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50">
+                          <SelectValue placeholder="Select task type" />
                         </SelectTrigger>
                       </FormControl>
-                      <FormMessage />
                       <SelectContent>
                         <SelectItem value={TaskType.BUG}>Bug</SelectItem>
                         <SelectItem value={TaskType.TASK}>Task</SelectItem>
                         <SelectItem value={TaskType.USERSTORY}>
-                          user story
+                          User Story
                         </SelectItem>
                       </SelectContent>
                     </Select>
+                    <FormMessage />
                   </FormItem>
                 )}
               />
+
               <DottedSeparator className="py-7" />
 
               <div className="flex items-center justify-between">

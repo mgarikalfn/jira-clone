@@ -16,6 +16,10 @@ interface DatePickerProps{
 }
 
 export const DatePicker = ({value ,onChange,className,placeholder="select date"}:DatePickerProps) =>{
+  // Get today's date and set time to beginning of day for accurate comparison
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
   return (
    <Popover>
   <PopoverTrigger asChild>
@@ -36,7 +40,23 @@ export const DatePicker = ({value ,onChange,className,placeholder="select date"}
     <Calendar
       mode="single"
       selected={value}
-      onSelect={(date) => onChange(date as Date)}
+      onSelect={(date) => {
+        if (date) {
+          // Ensure the selected date is not in the past
+          const selectedDate = new Date(date);
+          selectedDate.setHours(0, 0, 0, 0);
+          
+          if (selectedDate >= today) {
+            onChange(date);
+          }
+        }
+      }}
+      disabled={(date) => {
+        // Disable all past dates
+        const disabledDate = new Date(date);
+        disabledDate.setHours(0, 0, 0, 0);
+        return disabledDate < today;
+      }}
       autoFocus
     />
   </PopoverContent>

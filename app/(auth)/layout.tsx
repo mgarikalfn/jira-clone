@@ -17,7 +17,7 @@ const LayoutPage = ({ children }: LayoutPageProps) => {
             <div className="mx-auto max-w-screen-2xl p-4">
                 <nav className="flex justify-between items-center">
 
-                    <Image src="/logo.svg" height={30} width={50} alt="logo" />
+                    <Image src="" height={30} width={50} alt="logo" />
                     <Button asChild variant="secondary">
                         <Link href={pathname === "/sign-in" ? "/sign-up" : "/sign-in"}>
                         {pathname === "/sign-in" ? "Sign Up" : "Login"}

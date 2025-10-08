@@ -22,14 +22,13 @@ import {
 import { DottedSeparator } from "@/components/ui/dotted-separator";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem } from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 import { useCreateTask } from "../api/use-create-task";
 import { cn } from "@/lib/utils";
 import { createTaskSchema } from "../schemas";
 import { useWorkspaceId } from "@/features/workspaces/hooks/use-workspace-id";
 import { DatePicker } from "@/components/ui/date-picker";
-import { SelectTrigger, SelectValue } from "@radix-ui/react-select";
 import { MemberAvatar } from "@/features/members/components/member-avatar";
 import { TaskPriority, TaskStatus, TaskType } from "../types";
 import { ProjectAvatar } from "@/features/projects/components/project-avatar";
@@ -39,6 +38,13 @@ interface CreateTaskFormProps {
   projectOptions: { id: string; name: string; imageUrl: string }[];
   memberOptions: { id: string; name: string }[];
 }
+
+// Enhanced schema with story point validation
+const createTaskFormSchema = createTaskSchema
+  .omit({ workspaceId: true })
+  .extend({
+    storyPoint: z.number().min(0, "Story points cannot be negative").optional(),
+  });
 
 export const CreateTaskForm = ({
   onCancel,
@@ -50,14 +56,14 @@ export const CreateTaskForm = ({
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const formSchema = createTaskSchema.omit({ workspaceId: true });
-
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: { storyPoint: 0 },
+  const form = useForm<z.infer<typeof createTaskFormSchema>>({
+    resolver: zodResolver(createTaskFormSchema),
+    defaultValues: { 
+      storyPoint: undefined,
+    },
   });
 
-  const onSubmit = (values: z.infer<typeof formSchema>) => {
+  const onSubmit = (values: z.infer<typeof createTaskFormSchema>) => {
     mutate(
       { json: { ...values, workspaceId } },
       {
@@ -87,10 +93,11 @@ export const CreateTaskForm = ({
                 name="name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>task Name</FormLabel>
+                    <FormLabel>Task Name</FormLabel>
                     <FormControl>
                       <Input {...field} placeholder="Enter task name" />
                     </FormControl>
+                    <FormMessage />
                   </FormItem>
                 )}
               />
@@ -114,16 +121,29 @@ export const CreateTaskForm = ({
                 name="storyPoint"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>storyPoint</FormLabel>
+                    <FormLabel>Story Points</FormLabel>
                     <FormControl>
                       <Input
                         {...field}
                         value={field.value ?? ""}
-                        onChange={(e) => field.onChange(Number(e.target.value))}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          // Allow empty or positive numbers only
+                          if (value === "" || /^\d+$/.test(value)) {
+                            field.onChange(value === "" ? undefined : Number(value));
+                          }
+                        }}
+                        onBlur={(e) => {
+                          if (e.target.value === "") {
+                            field.onChange(undefined);
+                          }
+                        }}
                         type="number"
-                        placeholder="Enter estimated storyPoint"
+                        min="0"
+                        placeholder="Enter story points"
                       />
                     </FormControl>
+                    <FormMessage />
                   </FormItem>
                 )}
               />
@@ -135,15 +155,14 @@ export const CreateTaskForm = ({
                   <FormItem>
                     <FormLabel>Assignee</FormLabel>
                     <Select
-                      defaultValue={field.value}
+                      value={field.value}
                       onValueChange={field.onChange}
                     >
                       <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="select assignee" />
+                        <SelectTrigger className="w-full border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50">
+                          <SelectValue placeholder="Select assignee" />
                         </SelectTrigger>
                       </FormControl>
-                      <FormMessage />
                       <SelectContent>
                         {memberOptions.map((member) => (
                           <SelectItem key={member.id} value={member.id}>
@@ -158,6 +177,7 @@ export const CreateTaskForm = ({
                         ))}
                       </SelectContent>
                     </Select>
+                    <FormMessage />
                   </FormItem>
                 )}
               />
@@ -169,15 +189,14 @@ export const CreateTaskForm = ({
                   <FormItem>
                     <FormLabel>Status</FormLabel>
                     <Select
-                      defaultValue={field.value}
+                      value={field.value}
                       onValueChange={field.onChange}
                     >
                       <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="select status" />
+                        <SelectTrigger className="w-full border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50">
+                          <SelectValue placeholder="Select status" />
                         </SelectTrigger>
                       </FormControl>
-                      <FormMessage />
                       <SelectContent>
                         <SelectItem value={TaskStatus.BACKLOG}>
                           Backlog
@@ -192,6 +211,7 @@ export const CreateTaskForm = ({
                         <SelectItem value={TaskStatus.DONE}>Done</SelectItem>
                       </SelectContent>
                     </Select>
+                    <FormMessage />
                   </FormItem>
                 )}
               />
@@ -203,15 +223,14 @@ export const CreateTaskForm = ({
                   <FormItem>
                     <FormLabel>Project</FormLabel>
                     <Select
-                      defaultValue={field.value}
+                      value={field.value}
                       onValueChange={field.onChange}
                     >
                       <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="select project" />
+                        <SelectTrigger className="w-full border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50">
+                          <SelectValue placeholder="Select project" />
                         </SelectTrigger>
                       </FormControl>
-                      <FormMessage />
                       <SelectContent>
                         {projectOptions.map((project) => (
                           <SelectItem key={project.id} value={project.id}>
@@ -227,6 +246,7 @@ export const CreateTaskForm = ({
                         ))}
                       </SelectContent>
                     </Select>
+                    <FormMessage />
                   </FormItem>
                 )}
               />
@@ -238,15 +258,14 @@ export const CreateTaskForm = ({
                   <FormItem>
                     <FormLabel>Priority</FormLabel>
                     <Select
-                      defaultValue={field.value}
+                      value={field.value}
                       onValueChange={field.onChange}
                     >
                       <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="select priority" />
+                        <SelectTrigger className="w-full border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50">
+                          <SelectValue placeholder="Select priority" />
                         </SelectTrigger>
                       </FormControl>
-                      <FormMessage />
                       <SelectContent>
                         <SelectItem value={TaskPriority.HIGH}>High</SelectItem>
                         <SelectItem value={TaskPriority.MEDIUM}>
@@ -255,6 +274,7 @@ export const CreateTaskForm = ({
                         <SelectItem value={TaskPriority.LOW}>Low</SelectItem>
                       </SelectContent>
                     </Select>
+                    <FormMessage />
                   </FormItem>
                 )}
               />
@@ -266,23 +286,23 @@ export const CreateTaskForm = ({
                   <FormItem>
                     <FormLabel>Task Type</FormLabel>
                     <Select
-                      defaultValue={field.value}
+                      value={field.value}
                       onValueChange={field.onChange}
                     >
                       <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="select task type" />
+                        <SelectTrigger className="w-full border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50">
+                          <SelectValue placeholder="Select task type" />
                         </SelectTrigger>
                       </FormControl>
-                      <FormMessage />
                       <SelectContent>
                         <SelectItem value={TaskType.BUG}>Bug</SelectItem>
                         <SelectItem value={TaskType.TASK}>Task</SelectItem>
                         <SelectItem value={TaskType.USERSTORY}>
-                          User story
+                          User Story
                         </SelectItem>
                       </SelectContent>
                     </Select>
+                    <FormMessage />
                   </FormItem>
                 )}
               />
@@ -301,7 +321,7 @@ export const CreateTaskForm = ({
                   Cancel
                 </Button>
                 <Button type="submit" size="lg" disabled={isPending}>
-                  create task
+                  Create Task
                 </Button>
               </div>
             </div>

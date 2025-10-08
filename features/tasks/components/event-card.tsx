@@ -32,20 +32,23 @@ export const EventCard =({title,assignee,project,status,id}:EventCardProps) => {
     }
 
     return (
-        <div className="px-2">
-            <div onClick={onClick} className={cn(
-                "p-1.5 text-xs bg-white text-primary border rounded-md border-l-4 flex flex-col gap-y-1.5 cursor-pointer hover:opacity-75 transition",
-                statusColorMap[status]
-
-            )}>
-                <p>{title}</p>
-                <div className="flex items-center gap-x-1">
-                    <MemberAvatar name={assignee?.name} />
-                    <div className="size-1 rounded-full bg-neutral-300"/>
-
-                    <ProjectAvatar name={project?.name} image={project?.imageUrl} />
-                </div>
+       <div className="px-2">
+    <div onClick={onClick} className={cn(
+        "p-2 text-xs bg-white text-primary border rounded-md border-l-4 flex flex-col gap-y-2 cursor-pointer hover:opacity-75 transition",
+        statusColorMap[status]
+    )}>
+        <p className="line-clamp-2 font-medium">{title}</p>
+        <div className="flex flex-col gap-y-1.5">
+            <div className="flex items-center gap-x-1.5">
+                <MemberAvatar name={assignee?.name} className="size-4" />
+                <span className="text-xs text-muted-foreground truncate">{assignee?.name}</span>
+            </div>
+            <div className="flex items-center gap-x-1.5">
+                {/* <ProjectAvatar name={project?.name} image={project?.imageUrl} className="size-4" /> */}
+                <span className="text-xs text-muted-foreground truncate">{project?.name}</span>
             </div>
         </div>
+    </div>
+</div>
     )
 }

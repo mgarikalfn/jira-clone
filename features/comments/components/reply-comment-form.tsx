@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 
 interface ReplyCommentFormProps {
     data: string;
+    
 }
 
 const ReplyCommentForm = ({ data }: ReplyCommentFormProps) => {

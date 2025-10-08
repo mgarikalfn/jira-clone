@@ -2,14 +2,12 @@ import { sessionMiddleware } from "@/lib/session-middleware";
 import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
 import { createCommentSchema } from "../schemas";
-import { COMMENTS_ID, DATABASE_ID, TASKS_ID, WORKSPACES_ID } from "@/config";
+import { COMMENTS_ID, DATABASE_ID, TASKS_ID, WORKSPACES_ID, LIKES_ID } from "@/config";
 import { ID, Query } from "node-appwrite";
 import { getMember } from "@/features/members/utils";
 import { Task } from "@/features/tasks/types";
 import { AppComment } from "../types";
-import { Console } from "console";
 import { createAdminClient } from "@/lib/appwrite";
-import { LIKES_ID } from "../../../config";
 
 const app = new Hono()
 
@@ -43,8 +41,6 @@ const app = new Hono()
       ]
     );
 
-
-
     const enrichedComments = await Promise.all(
       comments.documents.map(async (comment) => {
         try {
@@ -62,7 +58,6 @@ const app = new Hono()
         }
       })
     );
-
 
     return c.json({ data: enrichedComments });
   })
@@ -140,7 +135,6 @@ const app = new Hono()
       );
 
       return c.json({ data: comment });
-
     }
   )
   
@@ -183,5 +177,105 @@ const app = new Hono()
     }
   )
 
+  // Delete comment
+  .delete(
+    "/:commentId",
+    sessionMiddleware,
+    async (c) => {
+      const user = c.get("user");
+      const databases = c.get("databases");
+      const { commentId } = c.req.param();
+
+      try {
+        // Get the comment first to check ownership and workspace
+        const comment = await databases.getDocument<AppComment>(
+          DATABASE_ID,
+          COMMENTS_ID,
+          commentId
+        );
+
+        if (!comment) {
+          return c.json({ error: "Comment not found" }, 404);
+        }
+
+        // Check if user is a member of the workspace
+        const member = await getMember({
+          databases,
+          workspaceId: comment.workspaceId,
+          userId: user.$id,
+        });
+
+        if (!member) {
+          return c.json({ error: "Unauthorized" }, 401);
+        }
+
+        // Check if user is the author or has admin role
+        const isAuthor = comment.authorId === user.$id;
+        const isAdmin = member.role === "ADMIN";
+
+        if (!isAuthor && !isAdmin) {
+          return c.json({ 
+            error: "You can only delete your own comments" 
+          }, 403);
+        }
+
+        // First, delete all likes associated with this comment
+        const commentLikes = await databases.listDocuments(
+          DATABASE_ID,
+          LIKES_ID,
+          [Query.equal("commentId", commentId)]
+        );
+
+        // Delete all likes in parallel
+        await Promise.all(
+          commentLikes.documents.map(like =>
+            databases.deleteDocument(DATABASE_ID, LIKES_ID, like.$id)
+          )
+        );
+
+        // Also delete any child comments (replies)
+        const childComments = await databases.listDocuments(
+          DATABASE_ID,
+          COMMENTS_ID,
+          [Query.equal("parentId", commentId)]
+        );
+
+        // Delete all child comments and their likes in parallel
+        await Promise.all(
+          childComments.documents.map(async (childComment) => {
+            // Delete likes for child comment
+            const childLikes = await databases.listDocuments(
+              DATABASE_ID,
+              LIKES_ID,
+              [Query.equal("commentId", childComment.$id)]
+            );
+            
+            await Promise.all(
+              childLikes.documents.map(like =>
+                databases.deleteDocument(DATABASE_ID, LIKES_ID, like.$id)
+              )
+            );
+            
+            // Delete the child comment
+            return databases.deleteDocument(DATABASE_ID, COMMENTS_ID, childComment.$id);
+          })
+        );
+
+        // Finally, delete the main comment
+        await databases.deleteDocument(DATABASE_ID, COMMENTS_ID, commentId);
+
+        return c.json({ 
+          success: true,
+          message: "Comment deleted successfully" 
+        });
+
+      } catch (error: any) {
+        console.error("Error deleting comment:", error);
+        return c.json({ 
+          error: error.message || "Failed to delete comment" 
+        }, 500);
+      }
+    }
+  )
 
 export default app;

@@ -61,7 +61,7 @@ export const TaskViewSwitcher = ({
       className="flex-1 w-full border rounded-lg"
     >
       <div className="h-full flex flex-col overflow-auto p-4">
-        <div className="flex flex-col gap-y-2 lg:flex-row justify-between items-center">
+        <div className="flex flex-col gap-y-4 lg:flex-row justify-between items-center">
           <TabsList className="w-full lg:w-auto">
             <TabsTrigger
               className="h-8 w-full 
@@ -90,9 +90,19 @@ export const TaskViewSwitcher = ({
             New
           </Button>
         </div>
-        <DottedSeparator />
+        
+        {/* Increased gap after tabs */}
+        <div className="my-4">
+          <DottedSeparator />
+        </div>
+        
         <DataFilters hideProjectFilter={hideProjectFilter} />
-        <DottedSeparator />
+        
+        {/* Increased gap after filters */}
+        <div className="my-4">
+          <DottedSeparator />
+        </div>
+        
         {isLoadingTasks ? (
           <div className="w-full border rounded-lg h-[200px] flex flex-col items-center justify-center">
             <Loader className="size-5 animate-spin text-muted-foreground" />

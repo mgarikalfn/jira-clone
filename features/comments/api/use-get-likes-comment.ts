@@ -1,5 +1,6 @@
+import { client } from "@/lib/rpc";
 import { useQuery } from "@tanstack/react-query";
-import {client} "@/lib/rpc";
+
 
 interface useGetLikesCommentProps{
     commentId:string
