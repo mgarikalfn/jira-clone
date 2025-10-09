@@ -9,6 +9,7 @@ import { Task } from "@/features/tasks/types";
 import { AppComment } from "../types";
 import { Console } from "console";
 import { createAdminClient } from "@/lib/appwrite";
+import { LIKES_ID } from "../../../config";
 
 const app = new Hono()
 
@@ -16,7 +17,7 @@ const app = new Hono()
     const currentUser = c.get("user");
     const databases = c.get("databases");
     const { taskId } = c.req.param();
-    const {users} = await createAdminClient();
+    const { users } = await createAdminClient();
 
     const task = await databases.getDocument<Task>(
       DATABASE_ID,
@@ -42,25 +43,25 @@ const app = new Hono()
       ]
     );
 
-   
 
-const enrichedComments = await Promise.all(
-  comments.documents.map(async (comment) => {
-    try {   
-      const user = await users.get(comment.authorId);
-      return {
-        ...comment,
-        authorName: user.name,   // add name
-        // optional
-      };
-    } catch {
-      return {
-        ...comment,
-        authorName: "Unknown", // fallback
-      };
-    }
-  })
-);
+
+    const enrichedComments = await Promise.all(
+      comments.documents.map(async (comment) => {
+        try {
+          const user = await users.get(comment.authorId);
+          return {
+            ...comment,
+            authorName: user.name,   // add name
+            // optional
+          };
+        } catch {
+          return {
+            ...comment,
+            authorName: "Unknown", // fallback
+          };
+        }
+      })
+    );
 
 
     return c.json({ data: enrichedComments });
@@ -73,11 +74,11 @@ const enrichedComments = await Promise.all(
     async (c) => {
       const user = c.get("user");
       const databases = c.get("databases");
-      const {taskId} = c.req.param();
+      const { taskId } = c.req.param();
 
       const { content, workspaceId } = c.req.valid("json");
 
-       const member = await getMember({
+      const member = await getMember({
         databases,
         workspaceId,
         userId: user.$id,
@@ -85,7 +86,7 @@ const enrichedComments = await Promise.all(
 
       if (!member) {
         return c.json({ error: "unauthorized" }, 401);
-      } 
+      }
 
       const comment = await databases.createDocument(
         DATABASE_ID,
@@ -101,6 +102,86 @@ const enrichedComments = await Promise.all(
 
       return c.json({ data: comment });
     }
-  );
+  )
+
+  .post(
+    "/:taskId/:parentId",
+    sessionMiddleware,
+    zValidator("json", createCommentSchema),
+    async (c) => {
+      const user = c.get("user");
+      const databases = c.get("databases");
+      const { taskId } = c.req.param();
+      const { parentId } = c.req.param();
+
+      const { content, workspaceId } = c.req.valid("json");
+
+      const member = await getMember({
+        databases,
+        workspaceId,
+        userId: user.$id,
+      });
+
+      if (!member) {
+        return c.json({ error: "unauthorized" }, 401);
+      }
+
+      const comment = await databases.createDocument(
+        DATABASE_ID,
+        COMMENTS_ID,
+        ID.unique(),
+        {
+          content,
+          authorId: user.$id,
+          workspaceId,
+          taskId,
+          parentId,
+        }
+      );
+
+      return c.json({ data: comment });
+
+    }
+  )
+  
+  .post(
+    "/:commentId/like",
+    sessionMiddleware,
+    async (c) => {
+      const user = c.get("user");
+      const databases = c.get("databases");
+      const { commentId } = c.req.param();
+
+      const existingLike = await databases.listDocuments(
+        DATABASE_ID,
+        LIKES_ID,
+        [
+          Query.equal("commentId", commentId),
+          Query.equal("userId", user.$id)
+        ]
+      )
+
+      if (existingLike.documents.length > 0) {
+        // Already liked → unlike
+        await databases.deleteDocument(
+          DATABASE_ID,
+          LIKES_ID, 
+          existingLike.documents[0].$id);
+        return c.json({liked:false})
+      } else {
+        // Not liked → like
+        await databases.createDocument(
+          DATABASE_ID,
+          LIKES_ID, 
+          ID.unique(),
+          {
+          userId: user.$id,
+          commentId,
+        });
+        return c.json({liked:true})
+      }
+    }
+  )
+
 
 export default app;

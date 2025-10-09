@@ -5,3 +5,4 @@ export const MEMBERS_ID =  process.env.NEXT_PUBLIC_APPWRITE_MEMBERS_ID!;
 export const PROJECTS_ID= process.env.NEXT_PUBLIC_APPWRITE_PROJECTS_ID!;
 export const TASKS_ID = process.env.NEXT_PUBLIC_APPWRITE_TASKS_ID!;
 export const COMMENTS_ID= process.env.NEXT_PUBLIC_APPWRITE_COMMENTS_ID!;
+export const LIKES_ID = process.env.NEXT_PUBLIC_APPWRITE_LIKES_ID!;
